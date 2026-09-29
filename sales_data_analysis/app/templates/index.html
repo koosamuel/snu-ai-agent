@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>의류·잡화 판매 분석</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">Sales Data Analysis</p>
+      <h1>의류·잡화 판매 대시보드</h1>
+    </div>
+    <form class="upload" action="{{ url_for('dashboard.upload') }}" method="post" enctype="multipart/form-data">
+      <label for="file">CSV 업로드</label>
+      <input id="file" type="file" name="file" accept=".csv" required>
+      <button type="submit">반영</button>
+    </form>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  {% if payload.error %}
+    <p class="banner error">{{ payload.error }}</p>
+  {% endif %}
+
+  {% if not payload.has_data %}
+    <section class="panel">
+      <h2>데이터가 없습니다</h2>
+      <p><code>uploads/*.csv</code>가 없거나 필수 열이 맞지 않습니다. 샘플 파일은 스크립트로 생성할 수 있습니다.</p>
+      <table class="schema">
+        <thead>
+          <tr><th>열 이름</th><th>설명</th><th>예시</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>sale_date</td><td>판매일 (YYYY-MM-DD)</td><td>2026-03-01</td></tr>
+          <tr><td>category</td><td>대분류 (의류 또는 잡화)</td><td>의류</td></tr>
+          <tr><td>subcategory</td><td>소분류</td><td>상의</td></tr>
+          <tr><td>product_name</td><td>상품명</td><td>코튼 셔츠</td></tr>
+          <tr><td>quantity</td><td>수량</td><td>2</td></tr>
+          <tr><td>unit_price</td><td>단가(원)</td><td>39000</td></tr>
+          <tr><td>store</td><td>매장</td><td>강남점</td></tr>
+          <tr><td>channel</td><td>채널</td><td>오프라인</td></tr>
+        </tbody>
+      </table>
+    </section>
+  {% else %}
+    <section class="kpis">
+      <article><p>총 매출</p><strong>{{ "{:,}".format(payload.kpis.total_sales) }}원</strong></article>
+      <article><p>판매 수량</p><strong>{{ "{:,}".format(payload.kpis.total_qty) }}</strong></article>
+      <article><p>거래 건수</p><strong>{{ "{:,}".format(payload.kpis.order_count) }}</strong></article>
+      <article><p>건당 평균</p><strong>{{ "{:,}".format(payload.kpis.avg_order) }}원</strong></article>
+      <article><p>CSV 파일</p><strong>{{ payload.file_count }}개</strong></article>
+    </section>
+    <section class="charts">
+      <article>
+        <h2>월별 매출</h2>
+        <canvas id="monthlyChart"></canvas>
+      </article>
+      <article>
+        <h2>카테고리별 매출</h2>
+        <canvas id="categoryChart"></canvas>
+      </article>
+    </section>
+    <section class="panel">
+      <h2>최근 거래</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>날짜</th><th>카테고리</th><th>상품</th><th>수량</th><th>단가</th><th>매출</th><th>매장</th><th>채널</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in payload.rows %}
+            <tr>
+              <td>{{ row.sale_date }}</td>
+              <td>{{ row.category }}</td>
+              <td>{{ row.product_name }}</td>
+              <td>{{ row.quantity }}</td>
+              <td>{{ "{:,}".format(row.unit_price) }}</td>
+              <td>{{ "{:,}".format(row.sales_amount) }}</td>
+              <td>{{ row.store }}</td>
+              <td>{{ row.channel }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script id="chart-data" type="application/json">{{ {"monthly": payload.monthly, "category": payload.by_category} | tojson }}</script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+  {% endif %}
+</body>
+</html>

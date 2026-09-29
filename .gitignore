@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+.venv/
+venv/
+
+# 사용자가 직접 업로드한 임시 통합 파일
+sales_data_analysis/uploads/sales_data.csv
+
