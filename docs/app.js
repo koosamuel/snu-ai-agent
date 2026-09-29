@@ -173,10 +173,20 @@ $("#logoutButton").addEventListener("click", async () => {
 });
 
 (async () => {
+  if (window.location.protocol === "file:") {
+    $("#connectionStatus").textContent = "HTTP 서버 실행 필요";
+    showMessage("이 화면은 파일을 직접 열 수 없습니다. http://127.0.0.1:8090 또는 GitHub Pages 주소로 접속해 주세요.", true);
+    return;
+  }
   try {
     if (!(await loadSupabase())) await loadSamples();
   } catch (error) {
-    showMessage(`Supabase 연결에 실패해 샘플 데이터로 전환합니다: ${error.message}`, true);
-    await loadSamples();
+    if (db) {
+      showMessage(`Supabase 연결에 실패해 샘플 데이터로 전환합니다: ${error.message}`, true);
+      db = null;
+      await loadSamples();
+    } else {
+      showMessage(`샘플 데이터를 불러오지 못했습니다: ${error.message}`, true);
+    }
   }
 })();
