@@ -1,192 +1,62 @@
-const REQUIRED_COLUMNS = [
-  "sale_date", "category", "subcategory", "product_name",
-  "quantity", "unit_price", "store", "channel",
-];
-
-const SAMPLE_FILES = [
-  "sales_2026_01.csv", "sales_2026_02.csv", "sales_2026_03.csv",
-  "sales_2026_04.csv", "sales_2026_05.csv", "sales_2026_06.csv",
-  "sales_2026_07.csv", "sales_2026_08.csv", "sales_2026_09.csv",
-  "sales_2026_10.csv", "sales_2026_11.csv", "sales_2026_12.csv",
-  "sales_busan_2025.csv", "sales_gangnam_2025.csv",
-  "sales_hongdae_2025.csv", "sales_online_2025.csv",
-];
-
-const won = new Intl.NumberFormat("ko-KR");
+const REQUIRED_COLUMNS = ["sale_date", "category", "subcategory", "product_name", "quantity", "unit_price", "store", "channel"];
+const SAMPLE_FILES = ["sales_2026_01.csv", "sales_2026_02.csv", "sales_2026_03.csv", "sales_2026_04.csv", "sales_2026_05.csv", "sales_2026_06.csv", "sales_2026_07.csv", "sales_2026_08.csv", "sales_2026_09.csv", "sales_2026_10.csv", "sales_2026_11.csv", "sales_2026_12.csv", "sales_busan_2025.csv", "sales_gangnam_2025.csv", "sales_hongdae_2025.csv", "sales_online_2025.csv"];
+const messages = {
+  ko: { pageTitle: "의류·잡화 판매 분석", title: "의류·잡화 판매 대시보드", language: "언어", addCsv: "CSV 추가", applyData: "데이터 반영", operatorLogin: "운영자 로그인", password: "비밀번호", login: "로그인", logout: "로그아웃", kpis: "핵심 지표", totalSales: "총 매출", totalQty: "판매 수량", orderCount: "거래 건수", avgOrder: "건당 평균", dataSource: "데이터 출처", monthlySales: "월별 매출", categorySales: "카테고리별 매출", recentTransactions: "최근 거래", date: "날짜", category: "카테고리", product: "상품", quantity: "수량", unitPrice: "단가", sales: "매출", store: "매장", channel: "채널", footer: "GitHub Pages 정적 화면 · Supabase 인증·저장·실시간 동기화", loading: "데이터 불러오는 중", sample: "GitHub Pages 샘플 데이터", connected: "Supabase 실시간 연결", supabase: "Supabase", sampleSource: (n) => `${n}개 CSV`, localSource: "샘플 + 로컬 CSV", won: "원", missingColumns: (v) => `필수 열이 없습니다: ${v}`, invalidRow: (n) => `${n}행의 날짜·수량·단가·필수 텍스트 형식을 확인해 주세요.`, parseError: (v) => `CSV를 읽지 못했습니다: ${v}`, loginRequired: "Supabase에 저장하려면 운영자 로그인이 필요합니다.", duplicateOnly: "모든 행이 기존 데이터와 중복되어 저장하지 않았습니다.", saved: (name, count, dup) => `${name}의 ${count}건을 저장했습니다.${dup ? ` 중복 ${dup}건은 제외했습니다.` : ""}`, localSaved: (name, count, dup) => `${name}의 ${count}건을 현재 화면에 반영했습니다.${dup ? ` 중복 ${dup}건은 제외했습니다.` : ""} 새로고침하면 초기화됩니다.`, signedIn: "로그인했습니다.", signedOut: "로그아웃했습니다.", httpRequired: "HTTP 서버 실행 필요", fileProtocol: "파일을 직접 열 수 없습니다. GitHub Pages 주소로 접속해 주세요.", supabaseFallback: (v) => `Supabase 연결에 실패해 샘플 데이터로 전환합니다: ${v}`, sampleFailure: (v) => `샘플 데이터를 불러오지 못했습니다: ${v}` },
+  en: { pageTitle: "Apparel & Accessories Sales Analysis", title: "Apparel & Accessories Sales Dashboard", language: "Language", addCsv: "Add CSV", applyData: "Import data", operatorLogin: "Operator login", password: "Password", login: "Sign in", logout: "Sign out", kpis: "Key metrics", totalSales: "Total sales", totalQty: "Units sold", orderCount: "Transactions", avgOrder: "Average order", dataSource: "Data source", monthlySales: "Monthly sales", categorySales: "Sales by category", recentTransactions: "Recent transactions", date: "Date", category: "Category", product: "Product", quantity: "Quantity", unitPrice: "Unit price", sales: "Sales", store: "Store", channel: "Channel", footer: "GitHub Pages · Supabase authentication, storage, and realtime sync", loading: "Loading data", sample: "GitHub Pages sample data", connected: "Supabase realtime connected", supabase: "Supabase", sampleSource: (n) => `${n} CSV files`, localSource: "Sample + local CSV", won: " KRW", missingColumns: (v) => `Missing required columns: ${v}`, invalidRow: (n) => `Check the date, quantity, price, and required text fields on row ${n}.`, parseError: (v) => `Could not parse CSV: ${v}`, loginRequired: "Operator login is required to save to Supabase.", duplicateOnly: "All rows already exist; nothing was saved.", saved: (name, count, dup) => `Saved ${count} rows from ${name}.${dup ? ` Skipped ${dup} duplicates.` : ""}`, localSaved: (name, count, dup) => `Added ${count} rows from ${name}.${dup ? ` Skipped ${dup} duplicates.` : ""} Refreshing resets them.`, signedIn: "Signed in.", signedOut: "Signed out.", httpRequired: "HTTP server required", fileProtocol: "This page cannot run directly from a file. Open the GitHub Pages URL.", supabaseFallback: (v) => `Supabase failed; using sample data: ${v}`, sampleFailure: (v) => `Could not load sample data: ${v}` },
+};
 const palette = ["#2f6f5e", "#c9842f", "#3d5a80", "#9b3d3d"];
-let rows = [];
-let monthlyChart;
-let categoryChart;
-let db = null;
-let session = null;
-
+let language = localStorage.getItem("dashboard-language") || (navigator.language.startsWith("ko") ? "ko" : "en");
+let numberFormat = new Intl.NumberFormat(language === "ko" ? "ko-KR" : "en-US");
+let rows = [], monthlyChart, categoryChart, db = null, session = null, realtimeChannel = null, authListenerReady = false;
 const $ = (selector) => document.querySelector(selector);
-const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
-}[character]));
+const t = (key, ...args) => typeof messages[language][key] === "function" ? messages[language][key](...args) : messages[language][key];
+const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+const rowKey = (row) => REQUIRED_COLUMNS.map((column) => String(row[column]).trim()).join("\u001f");
 
-function showMessage(text, isError = false) {
-  const element = $("#message");
-  element.textContent = text;
-  element.hidden = !text;
-  element.classList.toggle("error", isError);
+function showMessage(text, isError = false) { const el = $("#message"); el.textContent = text; el.hidden = !text; el.classList.toggle("error", isError); }
+function applyLanguage(next, rerender = true) {
+  language = next; localStorage.setItem("dashboard-language", language); document.documentElement.lang = language; document.title = t("pageTitle"); numberFormat = new Intl.NumberFormat(language === "ko" ? "ko-KR" : "en-US");
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+  $("#language").value = language; $("#language").setAttribute("aria-label", t("language"));
+  if (rerender && rows.length) {
+    $("#connectionStatus").textContent = db ? t("connected") : t("sample");
+    $("#sourceCount").textContent = db ? t("supabase") : t("sampleSource", SAMPLE_FILES.length);
+    render();
+  }
 }
-
 function normalizeRows(source) {
-  return source.map((row) => {
-    const missing = REQUIRED_COLUMNS.filter((column) => !(column in row));
-    if (missing.length) throw new Error(`필수 열이 없습니다: ${missing.join(", ")}`);
-    const quantity = Number(row.quantity);
-    const unitPrice = Number(row.unit_price);
-    if (!row.sale_date || !Number.isFinite(quantity) || !Number.isFinite(unitPrice)) {
-      throw new Error("날짜·수량·단가 형식을 확인해 주세요.");
-    }
-    return {
-      sale_date: String(row.sale_date).slice(0, 10),
-      category: String(row.category).trim(),
-      subcategory: String(row.subcategory).trim(),
-      product_name: String(row.product_name).trim(),
-      quantity,
-      unit_price: unitPrice,
-      store: String(row.store).trim(),
-      channel: String(row.channel).trim(),
-    };
+  return source.map((row, index) => {
+    const missing = REQUIRED_COLUMNS.filter((column) => !(column in row)); if (missing.length) throw new Error(t("missingColumns", missing.join(", ")));
+    const quantity = Number(row.quantity), unitPrice = Number(row.unit_price), date = String(row.sale_date || "").slice(0, 10);
+    const text = [row.category, row.subcategory, row.product_name, row.store, row.channel].map((v) => String(v || "").trim());
+    const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`));
+    if (!validDate || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0 || text.some((v) => !v)) throw new Error(t("invalidRow", index + 2));
+    return { sale_date: date, category: text[0], subcategory: text[1], product_name: text[2], quantity, unit_price: unitPrice, store: text[3], channel: text[4] };
   });
 }
-
-function groupSum(source, key) {
-  const result = new Map();
-  source.forEach((row) => {
-    const name = key === "month" ? row.sale_date.slice(0, 7) : row[key];
-    result.set(name, (result.get(name) || 0) + row.quantity * row.unit_price);
-  });
-  return [...result.entries()].map(([label, value]) => ({ label, value }));
-}
-
+function uniqueRows(imported) { const existing = new Set(rows.map(rowKey)), seen = new Set(); const unique = imported.filter((row) => { const key = rowKey(row); if (existing.has(key) || seen.has(key)) return false; seen.add(key); return true; }); return { unique, duplicates: imported.length - unique.length }; }
+function groupSum(source, key) { const result = new Map(); source.forEach((row) => { const name = key === "month" ? row.sale_date.slice(0, 7) : row[key]; result.set(name, (result.get(name) || 0) + row.quantity * row.unit_price); }); return [...result.entries()].map(([label, value]) => ({ label, value })); }
 function render() {
-  const totalSales = rows.reduce((sum, row) => sum + row.quantity * row.unit_price, 0);
-  const totalQty = rows.reduce((sum, row) => sum + row.quantity, 0);
-  $("#totalSales").textContent = `${won.format(totalSales)}원`;
-  $("#totalQty").textContent = won.format(totalQty);
-  $("#orderCount").textContent = won.format(rows.length);
-  $("#avgOrder").textContent = `${won.format(rows.length ? Math.round(totalSales / rows.length) : 0)}원`;
-
-  const recent = [...rows].sort((a, b) => b.sale_date.localeCompare(a.sale_date)).slice(0, 20);
-  $("#salesRows").innerHTML = recent.map((row) => `
-    <tr>
-      <td>${escapeHtml(row.sale_date)}</td><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.product_name)}</td>
-      <td>${won.format(row.quantity)}</td><td>${won.format(row.unit_price)}</td>
-      <td>${won.format(row.quantity * row.unit_price)}</td><td>${escapeHtml(row.store)}</td><td>${escapeHtml(row.channel)}</td>
-    </tr>`).join("");
-
-  const monthly = groupSum(rows, "month").sort((a, b) => a.label.localeCompare(b.label));
-  const categories = groupSum(rows, "category").sort((a, b) => b.value - a.value);
-  monthlyChart?.destroy();
-  categoryChart?.destroy();
-  monthlyChart = new Chart($("#monthlyChart"), {
-    type: "line",
-    data: { labels: monthly.map((item) => item.label), datasets: [{ data: monthly.map((item) => item.value), borderColor: palette[0], tension: .25 }] },
-    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false },
-  });
-  categoryChart = new Chart($("#categoryChart"), {
-    type: "bar",
-    data: { labels: categories.map((item) => item.label), datasets: [{ data: categories.map((item) => item.value), backgroundColor: palette }] },
-    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false },
-  });
+  const totalSales = rows.reduce((sum, row) => sum + row.quantity * row.unit_price, 0), totalQty = rows.reduce((sum, row) => sum + row.quantity, 0), suffix = t("won");
+  $("#totalSales").textContent = `${numberFormat.format(totalSales)}${suffix}`; $("#totalQty").textContent = numberFormat.format(totalQty); $("#orderCount").textContent = numberFormat.format(rows.length); $("#avgOrder").textContent = `${numberFormat.format(rows.length ? Math.round(totalSales / rows.length) : 0)}${suffix}`;
+  $("#salesRows").innerHTML = [...rows].sort((a, b) => b.sale_date.localeCompare(a.sale_date)).slice(0, 20).map((row) => `<tr><td>${escapeHtml(row.sale_date)}</td><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.product_name)}</td><td>${numberFormat.format(row.quantity)}</td><td>${numberFormat.format(row.unit_price)}</td><td>${numberFormat.format(row.quantity * row.unit_price)}</td><td>${escapeHtml(row.store)}</td><td>${escapeHtml(row.channel)}</td></tr>`).join("");
+  const monthly = groupSum(rows, "month").sort((a, b) => a.label.localeCompare(b.label)), categories = groupSum(rows, "category").sort((a, b) => b.value - a.value); monthlyChart?.destroy(); categoryChart?.destroy();
+  monthlyChart = new Chart($("#monthlyChart"), { type: "line", data: { labels: monthly.map((i) => i.label), datasets: [{ data: monthly.map((i) => i.value), borderColor: palette[0], tension: .25 }] }, options: { plugins: { legend: { display: false } }, maintainAspectRatio: false } });
+  categoryChart = new Chart($("#categoryChart"), { type: "bar", data: { labels: categories.map((i) => i.label), datasets: [{ data: categories.map((i) => i.value), backgroundColor: palette }] }, options: { plugins: { legend: { display: false } }, maintainAspectRatio: false } });
 }
-
-async function loadSamples() {
-  const parsed = await Promise.all(SAMPLE_FILES.map(async (name) => {
-    const response = await fetch(`./data/${name}`);
-    if (!response.ok) throw new Error(`${name}을 불러오지 못했습니다.`);
-    return Papa.parse(await response.text(), { header: true, skipEmptyLines: true }).data;
-  }));
-  rows = normalizeRows(parsed.flat());
-  $("#connectionStatus").textContent = "GitHub Pages 샘플 데이터";
-  $("#sourceCount").textContent = `${SAMPLE_FILES.length}개 CSV`;
-  render();
-}
-
+async function loadSamples() { const parsed = await Promise.all(SAMPLE_FILES.map(async (name) => { const response = await fetch(`./data/${name}`); if (!response.ok) throw new Error(name); return Papa.parse(await response.text(), { header: true, skipEmptyLines: true }).data; })); rows = normalizeRows(parsed.flat()); $("#connectionStatus").textContent = t("sample"); $("#sourceCount").textContent = t("sampleSource", SAMPLE_FILES.length); render(); }
+async function refreshSupabaseRows() { const { data, error } = await db.from("sales").select("sale_date,category,subcategory,product_name,quantity,unit_price,store,channel"); if (error) throw error; rows = normalizeRows(data || []); $("#connectionStatus").textContent = t("connected"); $("#sourceCount").textContent = t("supabase"); render(); }
 async function loadSupabase() {
-  const config = window.SUPABASE_CONFIG || {};
-  if (!config.url || !config.anonKey || config.url.includes("YOUR_PROJECT")) return false;
-  db = window.supabase.createClient(config.url, config.anonKey);
-  const { data: auth } = await db.auth.getSession();
-  session = auth.session;
-  $("#loginForm").hidden = false;
-  updateAuthUi();
-  const { data, error } = await db.from("sales").select("sale_date,category,subcategory,product_name,quantity,unit_price,store,channel");
-  if (error) throw error;
-  rows = normalizeRows(data || []);
-  $("#connectionStatus").textContent = "Supabase 실시간 연결";
-  $("#sourceCount").textContent = "Supabase";
-  render();
-  db.channel("sales-dashboard").on("postgres_changes", { event: "*", schema: "public", table: "sales" }, loadSupabase).subscribe();
-  db.auth.onAuthStateChange((_event, nextSession) => { session = nextSession; updateAuthUi(); });
-  return true;
+  const config = window.SUPABASE_CONFIG || {}; if (!config.url || !config.anonKey || config.url.includes("YOUR_PROJECT")) return false;
+  if (!db) db = window.supabase.createClient(config.url, config.anonKey); const { data: auth } = await db.auth.getSession(); session = auth.session; $("#loginForm").hidden = false; updateAuthUi(); await refreshSupabaseRows();
+  if (!realtimeChannel) realtimeChannel = db.channel("sales-dashboard").on("postgres_changes", { event: "*", schema: "public", table: "sales" }, refreshSupabaseRows).subscribe();
+  if (!authListenerReady) { db.auth.onAuthStateChange((_event, next) => { session = next; updateAuthUi(); }); authListenerReady = true; } return true;
 }
-
-function updateAuthUi() {
-  $("#email").hidden = Boolean(session);
-  $("#password").hidden = Boolean(session);
-  $("#loginForm button[type=submit]").hidden = Boolean(session);
-  $("#logoutButton").hidden = !session;
-}
-
-$("#uploadForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const file = $("#file").files[0];
-  if (!file) return;
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: async ({ data, errors }) => {
-      try {
-        if (errors.length) throw new Error(errors[0].message);
-        const imported = normalizeRows(data);
-        if (db) {
-          if (!session) throw new Error("Supabase에 저장하려면 운영자 로그인이 필요합니다.");
-          const { error } = await db.from("sales").insert(imported);
-          if (error) throw error;
-          showMessage(`${file.name}의 ${imported.length}건을 Supabase에 저장했습니다.`);
-          await loadSupabase();
-        } else {
-          rows = rows.concat(imported);
-          $("#sourceCount").textContent = "샘플 + 로컬 CSV";
-          render();
-          showMessage(`${file.name}의 ${imported.length}건을 현재 화면에 반영했습니다. 새로고침하면 초기화됩니다.`);
-        }
-      } catch (error) { showMessage(error.message, true); }
-    },
-  });
-});
-
-$("#loginForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const { error } = await db.auth.signInWithPassword({ email: $("#email").value, password: $("#password").value });
-  showMessage(error ? error.message : "로그인했습니다.", Boolean(error));
-});
-
-$("#logoutButton").addEventListener("click", async () => {
-  await db.auth.signOut();
-  showMessage("로그아웃했습니다.");
-});
-
-(async () => {
-  if (window.location.protocol === "file:") {
-    $("#connectionStatus").textContent = "HTTP 서버 실행 필요";
-    showMessage("이 화면은 파일을 직접 열 수 없습니다. http://127.0.0.1:8090 또는 GitHub Pages 주소로 접속해 주세요.", true);
-    return;
-  }
-  try {
-    if (!(await loadSupabase())) await loadSamples();
-  } catch (error) {
-    if (db) {
-      showMessage(`Supabase 연결에 실패해 샘플 데이터로 전환합니다: ${error.message}`, true);
-      db = null;
-      await loadSamples();
-    } else {
-      showMessage(`샘플 데이터를 불러오지 못했습니다: ${error.message}`, true);
-    }
-  }
-})();
+function updateAuthUi() { $("#email").hidden = Boolean(session); $("#password").hidden = Boolean(session); $("#loginForm button[type=submit]").hidden = Boolean(session); $("#logoutButton").hidden = !session; }
+$("#language").addEventListener("change", (event) => applyLanguage(event.target.value));
+$("#uploadForm").addEventListener("submit", (event) => { event.preventDefault(); const file = $("#file").files[0]; if (!file) return; Papa.parse(file, { header: true, skipEmptyLines: true, complete: async ({ data, errors }) => { try { if (errors.length) throw new Error(t("parseError", errors[0].message)); const imported = normalizeRows(data), { unique, duplicates } = uniqueRows(imported); if (!unique.length) throw new Error(t("duplicateOnly")); if (db) { if (!session) throw new Error(t("loginRequired")); const { error } = await db.from("sales").insert(unique); if (error) throw error; showMessage(t("saved", file.name, unique.length, duplicates)); await refreshSupabaseRows(); } else { rows = rows.concat(unique); $("#sourceCount").textContent = t("localSource"); render(); showMessage(t("localSaved", file.name, unique.length, duplicates)); } event.target.reset(); } catch (error) { showMessage(error.message, true); } } }); });
+$("#loginForm").addEventListener("submit", async (event) => { event.preventDefault(); const { error } = await db.auth.signInWithPassword({ email: $("#email").value, password: $("#password").value }); showMessage(error ? error.message : t("signedIn"), Boolean(error)); });
+$("#logoutButton").addEventListener("click", async () => { await db.auth.signOut(); showMessage(t("signedOut")); });
+(async () => { applyLanguage(language, false); $("#connectionStatus").textContent = t("loading"); if (window.location.protocol === "file:") { $("#connectionStatus").textContent = t("httpRequired"); showMessage(t("fileProtocol"), true); return; } try { if (!(await loadSupabase())) await loadSamples(); } catch (error) { if (db) { showMessage(t("supabaseFallback", error.message), true); db = null; await loadSamples(); } else showMessage(t("sampleFailure", error.message), true); } })();

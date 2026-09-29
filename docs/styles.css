@@ -32,13 +32,15 @@ h1, h2 { margin: 0 0 8px; }
 .eyebrow { margin: 0; color: var(--muted); letter-spacing: .08em; font-size: 12px; text-transform: uppercase; }
 .status { margin: 8px 0 0; color: var(--accent); font-weight: 700; }
 .header-actions { display: flex; gap: 12px; align-items: stretch; }
-.upload, .login, .panel, .kpis article, .charts article {
+.upload, .login, .language-control, .panel, .kpis article, .charts article {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
 }
 .upload, .login { padding: 16px; display: grid; gap: 8px; min-width: 250px; }
-input { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 8px; }
+.language-control { padding: 10px 12px; display: grid; gap: 5px; min-width: 110px; align-content: center; }
+.language-control label { color: var(--muted); font-size: 12px; }
+input, select { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); }
 button { background: var(--accent); color: white; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; }
 button.secondary { background: var(--muted); }
 
@@ -69,6 +71,13 @@ footer { margin-top: 20px; color: var(--muted); font-size: 13px; text-align: cen
   body { padding: 20px 12px 48px; }
   header { align-items: stretch; flex-direction: column; }
   .header-actions { flex-direction: column; }
-  .upload, .login { width: 100%; }
+  .upload, .login, .language-control { width: 100%; }
   .chart-frame { height: 220px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis article { padding: 13px; }
+  .kpis strong { font-size: 19px; }
+}
+
+@media (max-width: 420px) {
+  .kpis { grid-template-columns: 1fr; }
 }
