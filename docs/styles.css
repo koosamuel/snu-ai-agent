@@ -1,0 +1,62 @@
+:root {
+  --bg: #f4f1ea;
+  --ink: #1f2430;
+  --muted: #5c6578;
+  --card: #fffdf8;
+  --line: #e4dccb;
+  --accent: #2f6f5e;
+  --accent-soft: #e5f3ee;
+  --warn: #9b3d3d;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 32px 20px 64px;
+  font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+h1, h2 { margin: 0 0 8px; }
+.eyebrow { margin: 0; color: var(--muted); letter-spacing: .08em; font-size: 12px; text-transform: uppercase; }
+.status { margin: 8px 0 0; color: var(--accent); font-weight: 700; }
+.header-actions { display: flex; gap: 12px; align-items: stretch; }
+.upload, .login, .panel, .kpis article, .charts article {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.upload, .login { padding: 16px; display: grid; gap: 8px; min-width: 250px; }
+input { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 8px; }
+button { background: var(--accent); color: white; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+button.secondary { background: var(--muted); }
+
+.kpis, .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpis article, .charts article, .panel { padding: 16px 18px; }
+.kpis p { margin: 0; color: var(--muted); }
+.kpis strong { font-size: 23px; }
+.charts article { min-height: 310px; }
+.banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; background: var(--accent-soft); color: var(--accent); }
+.banner.error { background: #f8e4e4; color: var(--warn); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; white-space: nowrap; }
+footer { margin-top: 20px; color: var(--muted); font-size: 13px; text-align: center; }
+
+@media (max-width: 760px) {
+  body { padding: 20px 12px 48px; }
+  header { align-items: stretch; flex-direction: column; }
+  .header-actions { flex-direction: column; }
+  .upload, .login { width: 100%; }
+}
+

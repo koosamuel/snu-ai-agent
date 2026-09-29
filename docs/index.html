@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="의류·잡화 판매 데이터를 분석하는 정적 대시보드">
+  <title>의류·잡화 판매 분석</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">Sales Data Analysis</p>
+      <h1>의류·잡화 판매 대시보드</h1>
+      <p id="connectionStatus" class="status">샘플 데이터 불러오는 중</p>
+    </div>
+    <div class="header-actions">
+      <form id="uploadForm" class="upload">
+        <label for="file">CSV 추가</label>
+        <input id="file" type="file" accept=".csv" required>
+        <button type="submit">데이터 반영</button>
+      </form>
+      <form id="loginForm" class="login" hidden>
+        <label for="email">운영자 로그인</label>
+        <input id="email" type="email" placeholder="email@example.com" required>
+        <input id="password" type="password" placeholder="비밀번호" required>
+        <button type="submit">로그인</button>
+        <button id="logoutButton" class="secondary" type="button" hidden>로그아웃</button>
+      </form>
+    </div>
+  </header>
+
+  <p id="message" class="banner" hidden></p>
+
+  <main>
+    <section class="kpis" aria-label="핵심 지표">
+      <article><p>총 매출</p><strong id="totalSales">-</strong></article>
+      <article><p>판매 수량</p><strong id="totalQty">-</strong></article>
+      <article><p>거래 건수</p><strong id="orderCount">-</strong></article>
+      <article><p>건당 평균</p><strong id="avgOrder">-</strong></article>
+      <article><p>데이터 출처</p><strong id="sourceCount">-</strong></article>
+    </section>
+
+    <section class="charts">
+      <article>
+        <h2>월별 매출</h2>
+        <canvas id="monthlyChart"></canvas>
+      </article>
+      <article>
+        <h2>카테고리별 매출</h2>
+        <canvas id="categoryChart"></canvas>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>최근 거래</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th><th>카테고리</th><th>상품</th><th>수량</th><th>단가</th><th>매출</th><th>매장</th><th>채널</th>
+            </tr>
+          </thead>
+          <tbody id="salesRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>GitHub Pages 정적 화면 · Supabase 연결 시 인증·저장·실시간 동기화 지원</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
+
