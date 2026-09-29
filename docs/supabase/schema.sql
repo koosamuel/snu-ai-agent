@@ -13,6 +13,11 @@ create table if not exists public.sales (
 
 alter table public.sales enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant select on table public.sales to anon, authenticated;
+grant insert, update, delete on table public.sales to authenticated;
+grant usage, select on sequence public.sales_id_seq to authenticated;
+
 drop policy if exists "Public can read sales" on public.sales;
 create policy "Public can read sales"
 on public.sales for select
@@ -39,4 +44,3 @@ to authenticated
 using (true);
 
 alter publication supabase_realtime add table public.sales;
-
