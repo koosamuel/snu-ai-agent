@@ -47,10 +47,16 @@ button.secondary { background: var(--muted); }
 .kpis p { margin: 0; color: var(--muted); }
 .kpis strong { font-size: 23px; }
 .charts article { min-height: 0; }
+.chart-frame {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+}
 .charts canvas {
   display: block;
   width: 100% !important;
-  height: 260px !important;
+  height: 100% !important;
 }
 .banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; background: var(--accent-soft); color: var(--accent); }
 .banner.error { background: #f8e4e4; color: var(--warn); }
@@ -64,5 +70,5 @@ footer { margin-top: 20px; color: var(--muted); font-size: 13px; text-align: cen
   header { align-items: stretch; flex-direction: column; }
   .header-actions { flex-direction: column; }
   .upload, .login { width: 100%; }
-  .charts canvas { height: 220px !important; }
+  .chart-frame { height: 220px; }
 }
