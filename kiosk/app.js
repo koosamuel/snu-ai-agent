@@ -51,6 +51,61 @@ function toast(message) {
   toast.timer = setTimeout(() => element.classList.remove("show"), 2500);
 }
 
+function switchPageTab(tabName) {
+  const showFeedback = tabName === "feedback";
+  $("#orderPanel").hidden = showFeedback;
+  $("#feedbackPanel").hidden = !showFeedback;
+  $$(`[data-page-tab]`).forEach((button) => {
+    const active = button.dataset.pageTab === tabName;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function submitFeedback(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const rating = Number(data.get("rating"));
+  const status = $("#feedbackStatus");
+  const button = $("#feedbackSubmitButton");
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    status.textContent = "만족도를 선택해 주세요.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "보내는 중…";
+  status.textContent = "";
+  const feedback = {
+    rating,
+    tags: data.getAll("tags"),
+    comment: String(data.get("comment") || "").trim() || null,
+    order_type: state.orderType,
+  };
+
+  try {
+    if (db) {
+      const { error } = await db.from("feedback").insert(feedback);
+      if (error) throw error;
+    } else {
+      const saved = JSON.parse(localStorage.getItem("cafe-kiosk-feedback") || "[]");
+      saved.push({ ...feedback, created_at: new Date().toISOString() });
+      localStorage.setItem("cafe-kiosk-feedback", JSON.stringify(saved.slice(-30)));
+    }
+    form.reset();
+    status.textContent = "소중한 의견을 보내 주셔서 감사합니다.";
+  } catch (error) {
+    console.error(error);
+    status.textContent = "피드백을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "피드백 보내기";
+  }
+}
+
 async function loadLocalMenu() {
   const response = await fetch("./menu.json");
   if (!response.ok) throw new Error("로컬 메뉴 파일을 읽지 못했습니다.");
@@ -700,6 +755,8 @@ $("#staffButton").addEventListener("click", openStaff);
 $("#staffLoginForm").addEventListener("submit", staffLogin);
 $("#demoStaffButton").addEventListener("click", async () => { state.staffDemo = true; await showStaffBoard(); });
 $("#staffLogoutButton").addEventListener("click", staffLogout);
+$$(`[data-page-tab]`).forEach((button) => button.addEventListener("click", () => switchPageTab(button.dataset.pageTab)));
+$("#feedbackForm").addEventListener("submit", submitFeedback);
 $("#ragResetButton").addEventListener("click", resetRagSession);
 $("#ragForm").addEventListener("submit", submitRagMessage);
 $("#ragInput").addEventListener("keydown", (event) => {
@@ -735,7 +792,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=13").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=14").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;

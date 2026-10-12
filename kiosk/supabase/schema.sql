@@ -70,9 +70,19 @@ create table if not exists public.order_items (
   option_summary text not null default ''
 );
 
+create table if not exists public.feedback (
+  id uuid primary key default gen_random_uuid(),
+  rating smallint not null check (rating between 1 and 5),
+  tags text[] not null default '{}',
+  comment text check (comment is null or char_length(comment) <= 1000),
+  order_type text not null check (order_type in ('takeout', 'dine_in')),
+  created_at timestamptz not null default now()
+);
+
 create index if not exists menu_items_category_sort_idx on public.menu_items(category_id, sort_order);
 create index if not exists orders_status_created_idx on public.orders(status, created_at);
 create index if not exists order_items_order_idx on public.order_items(order_id);
+create index if not exists feedback_created_idx on public.feedback(created_at desc);
 
 create or replace function public.is_cafe_staff()
 returns boolean
@@ -96,6 +106,22 @@ alter table public.menu_options enable row level security;
 alter table public.staff_profiles enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+alter table public.feedback enable row level security;
+
+drop policy if exists "public submits feedback" on public.feedback;
+create policy "public submits feedback" on public.feedback
+for insert to anon, authenticated with check (
+  rating between 1 and 5
+  and cardinality(tags) <= 5
+  and (comment is null or char_length(comment) <= 1000)
+);
+
+drop policy if exists "staff reads feedback" on public.feedback;
+create policy "staff reads feedback" on public.feedback
+for select to authenticated using (public.is_cafe_staff());
+
+grant insert on public.feedback to anon, authenticated;
+grant select on public.feedback to authenticated;
 
 drop policy if exists "public reads active categories" on public.categories;
 create policy "public reads active categories" on public.categories

@@ -12,7 +12,7 @@
   <title>카페 키오스크 - 1조</title>
   <link rel="icon" href="./assets/featured-cafe.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=13" />
+  <link rel="stylesheet" href="./styles.css?v=14" />
 </head>
 <body>
   <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
@@ -32,7 +32,12 @@
     </div>
   </header>
 
-  <main class="kiosk-shell">
+  <nav class="page-tabs" aria-label="주요 화면" role="tablist">
+    <button id="orderTab" class="page-tab active" type="button" role="tab" aria-selected="true" aria-controls="orderPanel" data-page-tab="order">주문</button>
+    <button id="feedbackTab" class="page-tab" type="button" role="tab" aria-selected="false" aria-controls="feedbackPanel" data-page-tab="feedback">피드백</button>
+  </nav>
+
+  <main id="orderPanel" class="kiosk-shell" role="tabpanel" aria-labelledby="orderTab">
     <section class="menu-panel" aria-label="카페 메뉴">
       <section id="ragDialog" class="rag-modal rag-inline" aria-labelledby="ragTitle">
         <div class="rag-shell">
@@ -104,6 +109,45 @@
     </aside>
   </main>
 
+  <main id="feedbackPanel" class="feedback-page" role="tabpanel" aria-labelledby="feedbackTab" hidden>
+    <section class="feedback-card">
+      <p class="eyebrow">YOUR FEEDBACK</p>
+      <h1>이용 경험을 알려 주세요</h1>
+      <p class="feedback-intro">남겨 주신 의견은 더 편리한 주문 경험을 만드는 데 활용됩니다.</p>
+
+      <form id="feedbackForm" class="feedback-form">
+        <fieldset class="rating-fieldset">
+          <legend>이번 이용은 어떠셨나요?</legend>
+          <div class="rating-options">
+            <label><input type="radio" name="rating" value="1" required /><span><strong>1</strong><small>매우 아쉬움</small></span></label>
+            <label><input type="radio" name="rating" value="2" /><span><strong>2</strong><small>아쉬움</small></span></label>
+            <label><input type="radio" name="rating" value="3" /><span><strong>3</strong><small>보통</small></span></label>
+            <label><input type="radio" name="rating" value="4" /><span><strong>4</strong><small>만족</small></span></label>
+            <label><input type="radio" name="rating" value="5" /><span><strong>5</strong><small>매우 만족</small></span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="feedback-tags">
+          <legend>좋았거나 개선이 필요한 부분을 선택해 주세요</legend>
+          <div>
+            <label><input type="checkbox" name="tags" value="메뉴 찾기" /><span>메뉴 찾기</span></label>
+            <label><input type="checkbox" name="tags" value="AI 도우미" /><span>AI 도우미</span></label>
+            <label><input type="checkbox" name="tags" value="옵션 선택" /><span>옵션 선택</span></label>
+            <label><input type="checkbox" name="tags" value="장바구니" /><span>장바구니</span></label>
+            <label><input type="checkbox" name="tags" value="화면 구성" /><span>화면 구성</span></label>
+          </div>
+        </fieldset>
+
+        <label class="feedback-comment">
+          <span>추가 의견 <small>(선택)</small></span>
+          <textarea id="feedbackComment" name="comment" rows="5" maxlength="1000" placeholder="불편했던 점이나 좋았던 점을 자유롭게 작성해 주세요."></textarea>
+        </label>
+        <button id="feedbackSubmitButton" class="primary-button" type="submit">피드백 보내기</button>
+        <p id="feedbackStatus" class="feedback-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
   <dialog id="optionDialog" class="modal option-modal">
     <form id="optionForm" method="dialog">
       <button class="close-button" type="button" data-close="optionDialog" aria-label="닫기">×</button>
@@ -173,9 +217,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="./config.js?v=13" defer></script>
+  <script src="./config.js?v=14" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./rag-assistant.js?v=13" defer></script>
-  <script src="./app.js?v=13" defer></script>
+  <script src="./rag-assistant.js?v=14" defer></script>
+  <script src="./app.js?v=14" defer></script>
 </body>
 </html>
