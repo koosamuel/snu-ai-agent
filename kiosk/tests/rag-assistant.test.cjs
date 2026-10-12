@@ -47,6 +47,17 @@ test("장바구니의 수량과 합계를 계산한다", () => {
   assert.match(result.answer, /7,000원/);
 });
 
+test("선택한 주문 유형을 답변에 반영한다", () => {
+  const result = assistant.respond({ message: "아메리카노 한 잔 담아 줘", items, cart: [], orderType: "dine_in" });
+  assert.match(result.answer, /매장 주문/);
+});
+
+test("현재 주문 유형을 안내한다", () => {
+  const result = assistant.respond({ message: "지금 포장이야 매장이야?", items, cart: [], orderType: "takeout" });
+  assert.equal(result.intent, "order_type");
+  assert.match(result.answer, /현재 포장 주문/);
+});
+
 test("판매 메뉴와 무관한 질문은 범위 밖으로 안내한다", () => {
   const result = assistant.respond({ message: "오늘 날씨 알려줘", items, cart: [] });
   assert.equal(result.intent, "out_of_scope");

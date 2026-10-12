@@ -263,12 +263,17 @@
     };
   }
 
-  function respond({ message, items = [], options = [], cart = [], history = [] }) {
+  function respond({ message, items = [], options = [], cart = [], history = [], orderType = "takeout" }) {
     const contextualMessage = conversationQuery(message, history);
     const text = normalize(contextualMessage);
     const intent = inferIntent(text);
+    const orderTypeLabel = orderType === "dine_in" ? "매장" : "포장";
     const retrieved = retrieveMenu(items, text, intent === "compare" ? 6 : 4);
     const itemRows = retrieved.map((row) => row.item);
+
+    if (/(주문\s*유형|포장.*매장|매장.*포장|어디서\s*먹|어떻게\s*받)/u.test(text)) {
+      return { intent: "order_type", answer: `현재 ${orderTypeLabel} 주문으로 선택되어 있습니다. 상단의 포장·매장 버튼에서 변경할 수 있어요.`, retrieved: [] };
+    }
 
     const pairing = pairingResponse(items, text);
     if (pairing && intent !== "order") return pairing;
@@ -278,7 +283,7 @@
     }
 
     if (intent === "cart") {
-      return { intent, answer: cartSummary(cart), retrieved: [] };
+      return { intent, answer: `${orderTypeLabel} 주문입니다. ${cartSummary(cart)}`, retrieved: [] };
     }
 
     if (intent === "remove") {
@@ -299,7 +304,7 @@
       const optionIds = requestedOptionIds(message, options);
       return {
         intent,
-        answer: `${target.name} ${quantity}개를 요청한 옵션으로 장바구니에 반영했습니다.`,
+        answer: `${orderTypeLabel} 주문으로 ${target.name} ${quantity}개를 요청한 옵션으로 장바구니에 반영했습니다.`,
         action: { type: "add", itemId: target.id, quantity, ...(optionIds.length ? { optionIds } : {}) },
         retrieved: [target],
       };

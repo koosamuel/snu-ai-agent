@@ -631,7 +631,7 @@ function sendRagMessage(message) {
     return;
   }
 
-  const result = assistant.respond({ message, items: state.items, options: state.options, cart: state.cart, history });
+  const result = assistant.respond({ message, items: state.items, options: state.options, cart: state.cart, history, orderType: state.orderType });
   const answer = applyRagAction(result);
   appendRagMessage("assistant", answer, result.retrieved || []);
 }
@@ -736,6 +736,8 @@ $("#searchInput").addEventListener("input", (event) => { state.search = event.ta
 $$(`[data-order-type]`).forEach((button) => button.addEventListener("click", () => {
   state.orderType = button.dataset.orderType;
   $$(`[data-order-type]`).forEach((candidate) => candidate.classList.toggle("active", candidate === button));
+  const label = state.orderType === "dine_in" ? "매장" : "포장";
+  appendRagMessage("assistant", `${label} 주문으로 진행합니다. 이후 메뉴 추천과 장바구니 안내에 이 선택을 반영할게요.`);
 }));
 
 $("#optionGroups").addEventListener("change", updateAddButtonPrice);
@@ -792,7 +794,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=14").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=15").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;
