@@ -181,7 +181,7 @@ function renderFeedbackHistory() {
   $("#feedbackCount").textContent = tr(`${records.length}건`, `${records.length} saved`);
   $("#feedbackHistory").innerHTML = records.length ? records.map((record) => `
     <article class="feedback-history-item ${record.seeded ? "team-feedback" : ""}">
-      <div><strong>${escapeHtml(record.author || tr("직접 입력", "Personal"))}</strong>${record.created_at ? `<time datetime="${escapeHtml(record.created_at)}">${escapeHtml(new Date(record.created_at).toLocaleString(state.language === "en" ? "en-US" : "ko-KR"))}</time>` : ""}${record.order_type ? `<span>${record.order_type === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout")}</span>` : ""}</div>
+      <div><strong>${escapeHtml(record.author ? `${record.author}님` : tr("직접 입력", "Personal"))}</strong>${record.created_at ? `<time datetime="${escapeHtml(record.created_at)}">${escapeHtml(new Date(record.created_at).toLocaleString(state.language === "en" ? "en-US" : "ko-KR"))}</time>` : ""}${record.order_type ? `<span>${record.order_type === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout")}</span>` : ""}</div>
       <p>${escapeHtml(record.note)}</p>
       ${record.seeded ? "" : `<button type="button" data-feedback-id="${escapeHtml(record.id)}">${tr("삭제", "Delete")}</button>`}
     </article>`).join("") : `<p class="feedback-empty">${tr("아직 저장된 의견이 없습니다.", "No feedback has been saved yet.")}</p>`;
@@ -940,7 +940,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=16").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=19").catch(console.error));
 
 renderCart();
 applyLanguage();
