@@ -32,6 +32,7 @@ const state = {
   staffDemo: false,
   staffOrders: [],
   ragMessages: [],
+  ragPendingOrder: null,
   pendingOrder: null,
   connectionMessage: "메뉴 준비 중",
   connectionMode: "",
@@ -702,10 +703,31 @@ function ragOptionsFor(item, requestedIds = []) {
 function applyRagAction(result) {
   if (!result.action) return result.answer;
 
+  if (result.action.type === "pending" || result.action.type === "pending_many") {
+    state.ragPendingOrder = result.action;
+    return result.answer;
+  }
+
+  if (result.action.type === "checkout") {
+    state.ragPendingOrder = null;
+    openCheckout();
+    return result.answer;
+  }
+
   if (result.action.type === "clear") {
     state.cart = [];
     renderCart();
     toast("장바구니를 비웠습니다.");
+    return result.answer;
+  }
+
+  if (result.action.type === "add_many") {
+    result.action.items.forEach((action) => {
+      const target = state.items.find((candidate) => candidate.id === action.itemId && candidate.available !== false);
+      if (target) addItemToCart(target, ragOptionsFor(target, action.optionIds || []), Number(action.quantity || 1));
+    });
+    state.ragPendingOrder = null;
+    toast("여러 메뉴를 장바구니에 담았습니다.");
     return result.answer;
   }
 
@@ -717,6 +739,7 @@ function applyRagAction(result) {
     addItemToCart(item, selectedOptions, Number(result.action.quantity || 1));
     const optionSummary = selectedOptions.map((option) => option.name).join(" · ");
     toast(`${item.name}을(를) ${optionSummary || "기본 옵션"}으로 담았습니다.`);
+    state.ragPendingOrder = null;
     return result.answer;
   }
 
@@ -769,7 +792,7 @@ function sendRagMessage(message) {
 
   const localizedItems = state.items.map((item) => ({ ...item, name: itemName(item), description: itemDescription(item) }));
   const localizedOptions = state.options.map((option) => ({ ...option, name: optionName(option), group_name: optionGroupName(option.group_name) }));
-  const result = assistant.respond({ message, items: localizedItems, options: localizedOptions, cart: state.cart, history, orderType: state.orderType, language: state.language });
+  const result = assistant.respond({ message, items: localizedItems, options: localizedOptions, cart: state.cart, history, pendingOrder: state.ragPendingOrder, orderType: state.orderType, language: state.language });
   const appliedAnswer = applyRagAction(result);
   const answer = state.language === "en" ? englishAssistantAnswer(result) : appliedAnswer;
   appendRagMessage("assistant", answer, result.retrieved || []);
@@ -777,6 +800,7 @@ function sendRagMessage(message) {
 
 function resetRagSession() {
   state.ragMessages = [];
+  state.ragPendingOrder = null;
   state.cart = [];
   $("#ragMessages").innerHTML = "";
   renderCart();
@@ -948,7 +972,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=24").catch(console.error));
 
 renderCart();
 applyLanguage();

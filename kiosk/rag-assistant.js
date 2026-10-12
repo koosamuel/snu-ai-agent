@@ -58,7 +58,7 @@
     ] },
   ];
 
-  const SHORT_CONTEXT_PATTERN = /^(네|예|응|그래|좋아|둘\s*다|그걸로|그거|둘\s*모두)[.!~]?$/u;
+  const SHORT_CONTEXT_PATTERN = /^(네|예|응|그래|좋아|둘\s*다|그걸로|그거|둘\s*모두|[sml]|중|대|소|레귤러|라지|샷\s*추가)[.!~]?$/iu;
 
   const STOP_WORDS = new Set(["메뉴", "음료", "추천", "추천해", "추천해줘", "알려", "알려줘", "주세요", "주문", "담아", "담아줘", "비교", "차이", "가격", "얼마", "뭐가", "어떤", "해줘", "해", "좀"]);
 
@@ -186,7 +186,8 @@
       [/아아|아이스|ice|차갑/u, (option) => normalize(option.name) === "ice"],
       [/핫|따뜻|뜨겁/u, (option) => normalize(option.name) === "hot"],
       [/(?:^|\s)l(?:\s|$)|라지|large/u, (option) => normalize(option.name) === "large"],
-      [/(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular/u, (option) => normalize(option.name) === "regular"],
+      [/(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular|중\s*사이즈|톨/u, (option) => normalize(option.name) === "regular"],
+      [/(?:^|\s)s(?:\s|$)|스몰|small|작은/u, (option) => /small|스몰/u.test(normalize(option.name))],
       [/샷\s*추가|샷|extra shot/u, (option) => /샷 추가|extra shot/u.test(normalize(option.name))],
       [/디카페인|decaf/u, (option) => /디카페인|decaf/u.test(normalize(option.name))],
       [/오트\s*밀크|오트밀크|oat milk/u, (option) => /오트 밀크|oat milk/u.test(normalize(option.name))],
@@ -196,6 +197,40 @@
     return [...new Set(requests.flatMap(([pattern, matches]) => pattern.test(text)
       ? options.filter(matches).map((option) => option.id)
       : []))];
+  }
+
+  function optionApplies(option, item) {
+    if (!option.menu_item_id || option.menu_item_id === item.id) return true;
+    if (option.menu_item_id === "*drink") return item.category_id !== "dessert";
+    if (option.menu_item_id === "*coffee") return item.category_id === "coffee";
+    if (option.menu_item_id === "*latte") return /latte|라테|라떼/u.test(`${item.id} ${item.name}`);
+    if (option.menu_item_id === "*dessert") return item.category_id === "dessert";
+    return false;
+  }
+
+  function requiredGroups(item, options) {
+    return [...new Set(options.filter((option) => optionApplies(option, item) && option.group_name !== "추가").map((option) => option.group_name))];
+  }
+
+  function missingGroups(item, optionIds, options) {
+    const selected = new Set(optionIds);
+    return requiredGroups(item, options).filter((group) => !options.some((option) => selected.has(option.id) && option.group_name === group));
+  }
+
+  function explicitlyNamedItems(items, message) {
+    return (items || []).filter((item) => {
+      const aliases = [item.name, ...((KNOWLEDGE[item.id] || {}).aliases || [])];
+      return aliases.some((alias) => compact(alias) && compact(message).includes(compact(alias)));
+    }).sort((left, right) => mentionIndex(left, message) - mentionIndex(right, message));
+  }
+
+  function missingGroupAnswer(item, groups, options) {
+    const details = groups.map((group) => {
+      const choices = options.filter((option) => optionApplies(option, item) && option.group_name === group)
+        .map((option) => `${option.name}${Number(option.price_delta || 0) ? `(+${won(option.price_delta)})` : ""}`);
+      return `${group}: ${choices.join(" / ")}`;
+    });
+    return `${item.name} 주문에 필요한 옵션을 선택해 주세요. ${details.join(", ")}`;
   }
 
   function cartSummary(cart) {
@@ -266,13 +301,22 @@
     };
   }
 
-  function respond({ message, items = [], options = [], cart = [], history = [], orderType = "takeout", language = "ko" }) {
+  function respond({ message, items = [], options = [], cart = [], history = [], pendingOrder = null, orderType = "takeout", language = "ko" }) {
     const contextualMessage = conversationQuery(message, history);
     const text = normalize(contextualMessage);
     const intent = inferIntent(text);
     const orderTypeLabel = orderType === "dine_in" ? "매장" : "포장";
-    const retrieved = retrieveMenu(items, text, intent === "compare" ? 6 : 4);
-    const itemRows = retrieved.map((row) => row.item);
+    let retrieved = retrieveMenu(items, text, intent === "compare" ? 6 : 4);
+    let itemRows = retrieved.map((row) => row.item);
+
+    if (/알레르기|알러지|allerg/u.test(text)) {
+      return { intent: "safety", answer: "현재 메뉴 데이터에는 전체 원재료·알레르기 정보가 없어 안전하다고 단정할 수 없습니다. 주문 전 직원에게 원재료를 확인해 주세요.", retrieved: itemRows.slice(0, 3) };
+    }
+
+    if (/(전체|모든)\s*(메뉴|음료)|메뉴판|what.*menu/u.test(text)) {
+      const available = items.filter((item) => item.available !== false);
+      return { intent: "menu_list", answer: available.map((item) => `${item.name} ${won(item.price)}`).join(" · "), retrieved: available };
+    }
 
     if (/(주문\s*유형|포장.*매장|매장.*포장|어디서\s*먹|어떻게\s*받|order type|takeout.*dine|dine.*takeout)/u.test(text)) {
       return { intent: "order_type", answer: `현재 ${orderTypeLabel} 주문으로 선택되어 있습니다. 상단의 포장·매장 버튼에서 변경할 수 있어요.`, retrieved: [] };
@@ -289,6 +333,10 @@
       return { intent, answer: `${orderTypeLabel} 주문입니다. ${cartSummary(cart)}`, retrieved: [] };
     }
 
+    if (cart.length && /주문\s*(할게|확정|완료)|결제\s*(할게|진행)|이대로\s*(주문|결제)/u.test(text)) {
+      return { intent: "checkout", answer: "장바구니 내용을 확인한 뒤 주문을 접수해 주세요.", action: { type: "checkout" }, retrieved: [] };
+    }
+
     if (intent === "remove") {
       const target = itemRows[0];
       if (!target) return { intent: "clarify", answer: "장바구니에서 뺄 메뉴 이름을 함께 말씀해 주세요.", retrieved: [] };
@@ -300,15 +348,57 @@
       };
     }
 
+    if (pendingOrder?.type === "pending_many" && ["order", "inform"].includes(intent)) {
+      const actions = pendingOrder.items.map((action) => {
+        const target = items.find((item) => item.id === action.itemId);
+        const added = requestedOptionIds(message, options.filter((option) => target && optionApplies(option, target)));
+        return { ...action, optionIds: [...new Set([...(action.optionIds || []), ...added])] };
+      });
+      const incomplete = actions.find((action) => {
+        const target = items.find((item) => item.id === action.itemId);
+        return target && missingGroups(target, action.optionIds, options).length;
+      });
+      if (incomplete) {
+        const target = items.find((item) => item.id === incomplete.itemId);
+        const missing = missingGroups(target, incomplete.optionIds, options);
+        return { intent: "clarify", answer: `${target.name}: ${missingGroupAnswer(target, missing, options)}`, action: { type: "pending_many", items: actions }, retrieved: actions.map((action) => items.find((item) => item.id === action.itemId)).filter(Boolean) };
+      }
+      return { intent: "order", answer: `${orderTypeLabel} 주문으로 ${actions.length}개 메뉴를 장바구니에 반영했습니다.`, action: { type: "add_many", items: actions }, retrieved: actions.map((action) => items.find((item) => item.id === action.itemId)).filter(Boolean) };
+    }
+
+    if (pendingOrder && ["order", "inform"].includes(intent)) {
+      const target = items.find((item) => item.id === pendingOrder.itemId && item.available !== false);
+      if (target) {
+        const optionIds = [...new Set([...(pendingOrder.optionIds || []), ...requestedOptionIds(message, options)])];
+        const missing = missingGroups(target, optionIds, options);
+        if (missing.length) return { intent: "clarify", answer: missingGroupAnswer(target, missing, options), action: { type: "pending", ...pendingOrder, optionIds, missingGroups: missing }, retrieved: [target] };
+        return { intent: "order", answer: `${orderTypeLabel} 주문으로 ${target.name} ${pendingOrder.quantity || 1}개를 선택한 옵션으로 장바구니에 반영했습니다.`, action: { type: "add", itemId: target.id, quantity: pendingOrder.quantity || 1, optionIds }, retrieved: [target] };
+      }
+    }
+
     if (intent === "order") {
-      const target = itemRows[0];
-      if (!target) return { intent: "clarify", answer: "담을 메뉴 이름을 말씀해 주세요. 예: ‘아메리카노 두 잔 담아 줘’." , retrieved: [] };
-      const quantity = parseQuantity(text);
-      const optionIds = requestedOptionIds(message, options);
+      const targets = explicitlyNamedItems(items, text);
+      if (!targets.length) return { intent: "clarify", answer: "담을 메뉴 이름을 말씀해 주세요. 예: ‘아메리카노 두 잔 담아 줘’." , retrieved: [] };
+      const actions = targets.map((target) => {
+        const start = mentionIndex(target, text);
+        const next = targets.map((item) => mentionIndex(item, text)).filter((index) => index > start).sort((a, b) => a - b)[0];
+        const segment = next == null ? text.slice(start) : text.slice(start, next);
+        return { itemId: target.id, quantity: parseQuantity(targets.length === 1 ? text : segment), optionIds: requestedOptionIds(`${text} ${segment}`, options.filter((option) => optionApplies(option, target))) };
+      });
+      const incomplete = actions.find((action) => missingGroups(items.find((item) => item.id === action.itemId), action.optionIds, options).length);
+      if (incomplete) {
+        const target = items.find((item) => item.id === incomplete.itemId);
+        const missing = missingGroups(target, incomplete.optionIds, options);
+        if (actions.length > 1) return { intent: "clarify", answer: `${target.name}: ${missingGroupAnswer(target, missing, options)}`, action: { type: "pending_many", items: actions }, retrieved: targets };
+        return { intent: "clarify", answer: missingGroupAnswer(target, missing, options), action: { type: "pending", ...incomplete, missingGroups: missing }, retrieved: targets };
+      }
+      if (actions.length > 1) return { intent, answer: `${orderTypeLabel} 주문으로 ${actions.length}개 메뉴를 장바구니에 반영했습니다.`, action: { type: "add_many", items: actions }, retrieved: targets };
+      const [action] = actions;
+      const target = targets[0];
       return {
         intent,
-        answer: `${orderTypeLabel} 주문으로 ${target.name} ${quantity}개를 요청한 옵션으로 장바구니에 반영했습니다.`,
-        action: { type: "add", itemId: target.id, quantity, ...(optionIds.length ? { optionIds } : {}) },
+        answer: `${orderTypeLabel} 주문으로 ${target.name} ${action.quantity}개를 요청한 옵션으로 장바구니에 반영했습니다.`,
+        action: { type: "add", itemId: action.itemId, quantity: action.quantity, ...(action.optionIds.length ? { optionIds: action.optionIds } : {}) },
         retrieved: [target],
       };
     }
@@ -329,6 +419,10 @@
     }
 
     if (intent === "recommend") {
+      if (/커피\s*(아닌|말고|제외)|비커피|non.?coffee/u.test(text)) {
+        retrieved = retrieveMenu(items.filter((item) => item.category_id !== "coffee"), text.replace(/커피/gu, "논커피"), 4);
+        itemRows = retrieved.map((row) => row.item);
+      }
       if (!itemRows.length) return { intent: "clarify", answer: "원하는 맛이나 카페인 정도를 알려 주세요. 예: ‘달콤하고 카페인이 적은 메뉴’." , retrieved: [] };
       const picks = itemRows.slice(0, 3);
       return {
@@ -340,6 +434,12 @@
 
     if (itemRows.length) {
       const target = itemRows[0];
+      const requested = requestedOptionIds(text, options.filter((option) => optionApplies(option, target)));
+      if (intent === "price" && requested.length) {
+        const selected = options.filter((option) => requested.includes(option.id));
+        const total = Number(target.price) + selected.reduce((sum, option) => sum + Number(option.price_delta || 0), 0);
+        return { intent: "price", answer: `${target.name} ${selected.map((option) => option.name).join(" · ")} 가격은 ${won(total)}입니다.`, retrieved: [target] };
+      }
       return {
         intent: intent === "price" ? "price" : "inform",
         answer: intent === "price" ? `${target.name}의 기본 가격은 ${won(target.price)}입니다.` : menuSentence(target),
@@ -354,5 +454,5 @@
     };
   }
 
-  return { conversationQuery, inferIntent, matchingMealPairings, ngrams, normalize, parseQuantity, requestedOptionIds, retrieveMenu, respond, scoreItem };
+  return { conversationQuery, explicitlyNamedItems, inferIntent, matchingMealPairings, ngrams, normalize, parseQuantity, requestedOptionIds, retrieveMenu, respond, scoreItem };
 }));
