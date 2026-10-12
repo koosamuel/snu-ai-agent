@@ -478,8 +478,8 @@ function appendRagMessage(role, text, retrieved = []) {
       <button type="button" data-rag-menu-id="${escapeHtml(item.id)}">
         <span>${escapeHtml(item.name)}</span><strong>${won(item.price)}</strong>
       </button>`).join("")}</div>` : ""}`;
-  $("#ragMessages").append(article);
-  $("#ragMessages").scrollTop = $("#ragMessages").scrollHeight;
+  $("#ragMessages").prepend(article);
+  $("#ragMessages").scrollTop = 0;
 }
 
 function openRagAssistant() {
@@ -718,7 +718,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=6").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=7").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;

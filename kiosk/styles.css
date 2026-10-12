@@ -293,10 +293,13 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .modal-description { color: var(--muted); line-height: 1.55; }
 .close-button { position: absolute; top: 18px; right: 18px; display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; font-size: 24px; cursor: pointer; }
 .rag-modal { width: min(760px, calc(100% - 28px)); padding: 0; overflow: hidden; }
-.rag-inline { width: 100%; margin: 0 0 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper); box-shadow: var(--shadow); }
+.rag-inline { width: 100%; margin: 0 0 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper); box-shadow: var(--shadow); font-size: 70%; }
 .rag-inline .rag-shell { max-height: none; }
 .rag-inline .rag-messages { min-height: 220px; max-height: 360px; }
-.rag-shell { display: grid; grid-template-rows: auto auto auto minmax(250px, 1fr) auto auto; max-height: min(88vh, 850px); }
+.rag-inline .rag-heading h2 { font-size: 2.1em; }
+.rag-inline .rag-statusbar, .rag-inline .rag-statusbar button, .rag-inline .rag-prompts button, .rag-inline .rag-notice { font-size: 1em; }
+.rag-inline .rag-message-label { font-size: .8em; }
+.rag-shell { display: grid; grid-template-rows: auto auto auto auto auto minmax(220px, 1fr); max-height: min(88vh, 850px); }
 .rag-heading { position: relative; padding: 28px 76px 19px 28px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #fffdf8, #eef3ec); }
 .rag-heading h2 { margin: 0 0 7px; }
 .rag-heading p:last-child { margin: 0; color: var(--muted); line-height: 1.55; }

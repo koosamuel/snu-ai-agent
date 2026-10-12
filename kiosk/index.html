@@ -12,7 +12,7 @@
   <title>모닝브루 카페 키오스크</title>
   <link rel="icon" href="./assets/featured-cafe.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=6" />
+  <link rel="stylesheet" href="./styles.css?v=7" />
 </head>
 <body>
   <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
@@ -63,14 +63,14 @@
             <button type="button" data-rag-prompt="장바구니 합계를 알려 줘">장바구니 확인</button>
           </div>
 
-          <div id="ragMessages" class="rag-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-
           <form id="ragForm" class="rag-form">
             <label for="ragInput" class="sr-only">메뉴 질문 또는 주문 요청</label>
             <textarea id="ragInput" rows="2" maxlength="300" placeholder="예: 아메리카노 두 잔 담아 줘" required></textarea>
             <button id="ragSendButton" class="primary-button" type="submit">보내기</button>
           </form>
           <p class="rag-notice">검색·대화 로직은 브라우저에서 실행되며, 최종 가격과 주문은 Supabase가 다시 검증합니다.</p>
+
+          <div id="ragMessages" class="rag-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
         </div>
       </section>
 
@@ -182,9 +182,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="./config.js?v=6" defer></script>
+  <script src="./config.js?v=7" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./rag-assistant.js?v=6" defer></script>
-  <script src="./app.js?v=6" defer></script>
+  <script src="./rag-assistant.js?v=7" defer></script>
+  <script src="./app.js?v=7" defer></script>
 </body>
 </html>
