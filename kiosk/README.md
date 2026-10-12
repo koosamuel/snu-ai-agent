@@ -7,6 +7,7 @@
 ```text
 GitHub Pages 정적 클라이언트
 ├─ 메뉴 선택·옵션·장바구니·주문 확인
+├─ 메뉴 문서 검색 기반 주문 도우미
 ├─ PWA 정적 자산 캐시
 └─ Supabase Publishable Key
           ↓
@@ -30,6 +31,7 @@ Supabase
 - Supabase 미설정 상태에서도 확인할 수 있는 데모 모드
 - 태블릿·모바일 반응형 화면과 PWA 정적 자산 캐시
 - WebMCP 지원 브라우저에서 메뉴 조회·장바구니 추가·주문 접수 도구 등록
+- 박우진 교수님 RAG 키오스크의 검색·추천·비교·주문 검증 흐름을 반영한 AI 주문 도우미
 
 실제 카드 승인은 포함하지 않습니다. 결제 단말 업체의 SDK 또는 POS 연동을 별도로 검토해야 합니다.
 
@@ -44,6 +46,19 @@ python3 -m http.server 8000
 ```
 
 `http://localhost:8000`을 엽니다. 현재 `config.js`는 `DEMO_MODE: true`이므로 Supabase 없이도 주문 흐름과 데모 운영판을 확인할 수 있습니다.
+
+주문 도우미의 검색·의도 분류 테스트는 별도 설치 없이 실행할 수 있습니다.
+
+```bash
+npm test
+npm run check
+```
+
+## 박우진 교수님 RAG 코드 반영 범위
+
+기존 `ai-applications-assignments-koo/rag-kiosk`의 메뉴 문서 검색, 추천·비교·주문 의도 구분, 메뉴 ID·수량 검증 원칙을 현재 키오스크 화면과 장바구니에 맞게 통합했습니다. 브라우저에서는 `rag-assistant.js`가 현재 메뉴 데이터만 검색하고, 명확한 주문 요청만 기본 옵션으로 장바구니에 반영합니다.
+
+교수님 원본의 Claude 호출은 서버 전용 기능이므로 정적 GitHub Pages 클라이언트에 API 키나 호출 코드를 넣지 않았습니다. 향후 생성형 답변이 필요하면 Supabase Edge Function 또는 별도 Worker에서 비밀 키를 관리하고, 서버가 반환한 메뉴 ID·옵션·가격을 다시 검증해야 합니다. 세부 대응 관계는 `PARK_RAG_INTEGRATION.md`를 참고합니다.
 
 ## Supabase 연결
 
@@ -91,3 +106,4 @@ chmod +x scripts/build-static.sh
 - 서로 다른 두 기기에서 주문 접수와 Realtime 갱신 확인
 - 네트워크 장애 시 안내와 복구 확인
 - 결제 단말 연동 전 화면에 결제 완료로 표시하지 않기
+- 생성형 RAG 서버를 연결할 때 API 키가 브라우저 번들·`config.js`·GitHub 이력에 포함되지 않는지 확인

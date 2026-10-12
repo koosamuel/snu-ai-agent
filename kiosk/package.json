@@ -1,0 +1,8 @@
+{
+  "name": "morning-brew-kiosk-client",
+  "private": true,
+  "scripts": {
+    "check": "node --check app.js && node --check rag-assistant.js",
+    "test": "node --test tests/*.test.cjs"
+  }
+}

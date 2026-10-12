@@ -26,6 +26,7 @@ const state = {
   staffSession: null,
   staffDemo: false,
   staffOrders: [],
+  ragMessages: [],
 };
 
 const categoryColors = {
@@ -446,6 +447,94 @@ async function staffLogout() {
   $("#staffLoginSection").hidden = false;
 }
 
+function appendRagMessage(role, text, retrieved = []) {
+  const message = { role, text, retrieved };
+  state.ragMessages.push(message);
+  state.ragMessages = state.ragMessages.slice(-12);
+
+  const article = document.createElement("article");
+  article.className = `rag-message ${role}`;
+  article.innerHTML = `
+    <span class="rag-message-label">${role === "user" ? "나" : "주문 도우미"}</span>
+    <p>${escapeHtml(text)}</p>
+    ${retrieved.length ? `<div class="rag-sources" aria-label="검색된 메뉴">${retrieved.map((item) => `
+      <button type="button" data-rag-menu-id="${escapeHtml(item.id)}">
+        <span>${escapeHtml(item.name)}</span><strong>${won(item.price)}</strong>
+      </button>`).join("")}</div>` : ""}`;
+  $("#ragMessages").append(article);
+  $("#ragMessages").scrollTop = $("#ragMessages").scrollHeight;
+}
+
+function openRagAssistant() {
+  if (!state.ragMessages.length) {
+    appendRagMessage("assistant", "원하는 맛, 카페인 정도, 가격을 말씀해 주세요. 메뉴 비교와 기본 옵션 장바구니 담기도 도와드릴게요.");
+  }
+  $("#ragDialog").showModal();
+  window.setTimeout(() => $("#ragInput").focus(), 0);
+}
+
+function removeMenuFromCart(itemId, quantity) {
+  let remaining = Math.max(1, Number(quantity || 1));
+  let removed = 0;
+  for (const entry of state.cart) {
+    if (entry.item.id !== itemId || remaining < 1) continue;
+    const decrement = Math.min(entry.quantity, remaining);
+    entry.quantity -= decrement;
+    remaining -= decrement;
+    removed += decrement;
+  }
+  state.cart = state.cart.filter((entry) => entry.quantity > 0);
+  if (removed) renderCart();
+  return removed;
+}
+
+function applyRagAction(result) {
+  if (!result.action) return result.answer;
+  const item = state.items.find((candidate) => candidate.id === result.action.itemId && candidate.available !== false);
+  if (!item) return "현재 주문 가능한 메뉴를 찾지 못했습니다. 메뉴 목록을 다시 확인해 주세요.";
+
+  if (result.action.type === "add") {
+    addItemToCart(item, defaultOptionsFor(item), Number(result.action.quantity || 1));
+    toast(`${item.name}을(를) 기본 옵션으로 담았습니다.`);
+    return result.answer;
+  }
+
+  if (result.action.type === "remove") {
+    const removed = removeMenuFromCart(item.id, result.action.quantity);
+    if (!removed) return `${item.name}은(는) 현재 장바구니에 없습니다.`;
+    toast(`${item.name} ${removed}개를 장바구니에서 뺐습니다.`);
+    return `${item.name} ${removed}개를 장바구니에서 뺐습니다.`;
+  }
+  return result.answer;
+}
+
+function sendRagMessage(message) {
+  const assistant = window.CafeRagAssistant;
+  appendRagMessage("user", message);
+  if (!assistant?.respond) {
+    appendRagMessage("assistant", "주문 도우미를 불러오지 못했습니다. 화면을 새로고침해 주세요.");
+    return;
+  }
+  if (!state.items.length) {
+    appendRagMessage("assistant", "메뉴를 준비하고 있습니다. 잠시 뒤 다시 말씀해 주세요.");
+    return;
+  }
+
+  const result = assistant.respond({ message, items: state.items, cart: state.cart });
+  const answer = applyRagAction(result);
+  appendRagMessage("assistant", answer, result.retrieved || []);
+}
+
+function submitRagMessage(event) {
+  event.preventDefault();
+  const input = $("#ragInput");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+  sendRagMessage(message);
+  input.focus();
+}
+
 function registerWebMcpTools() {
   const context = document.modelContext;
   if (!context?.registerTool) return;
@@ -546,6 +635,24 @@ $("#staffButton").addEventListener("click", openStaff);
 $("#staffLoginForm").addEventListener("submit", staffLogin);
 $("#demoStaffButton").addEventListener("click", async () => { state.staffDemo = true; await showStaffBoard(); });
 $("#staffLogoutButton").addEventListener("click", staffLogout);
+$("#ragButton").addEventListener("click", openRagAssistant);
+$("#ragForm").addEventListener("submit", submitRagMessage);
+$("#ragInput").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    $("#ragForm").requestSubmit();
+  }
+});
+$(".rag-prompts").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-rag-prompt]");
+  if (button) sendRagMessage(button.dataset.ragPrompt);
+});
+$("#ragMessages").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-rag-menu-id]");
+  if (!button) return;
+  $("#ragDialog").close();
+  openOptions(button.dataset.ragMenuId);
+});
 $("#staffOrders").addEventListener("click", (event) => {
   const button = event.target.closest("[data-order-id]");
   if (button) updateOrderStatus(button.dataset.orderId, button.dataset.nextStatus);

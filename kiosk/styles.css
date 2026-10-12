@@ -33,9 +33,9 @@ body {
     var(--canvas);
 }
 
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { color: inherit; }
-button:focus-visible, input:focus-visible { outline: 3px solid rgba(199, 100, 63, .45); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid rgba(199, 100, 63, .45); outline-offset: 2px; }
 
 .skip-link {
   position: fixed;
@@ -114,6 +114,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(199, 100, 63
   cursor: pointer;
 }
 .ghost-button:hover, .secondary-button:hover { border-color: var(--sage); background: var(--sage-soft); }
+.assistant-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 17px;
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  color: white;
+  background: var(--sage);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 7px 18px rgba(47,74,59,.18);
+}
+.assistant-button:hover { background: #263e31; }
+.assistant-button .assistant-icon { color: #f4d8a7; }
 
 .kiosk-shell {
   display: grid;
@@ -299,6 +315,30 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .modal h2 { margin-bottom: 8px; font-size: 30px; letter-spacing: -.045em; }
 .modal-description { color: var(--muted); line-height: 1.55; }
 .close-button { position: absolute; top: 18px; right: 18px; display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; font-size: 24px; cursor: pointer; }
+.rag-modal { width: min(760px, calc(100% - 28px)); padding: 0; overflow: hidden; }
+.rag-shell { display: grid; grid-template-rows: auto auto minmax(250px, 1fr) auto auto; max-height: min(88vh, 850px); }
+.rag-heading { position: relative; padding: 28px 76px 19px 28px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #fffdf8, #eef3ec); }
+.rag-heading h2 { margin: 0 0 7px; }
+.rag-heading p:last-child { margin: 0; color: var(--muted); line-height: 1.55; }
+.rag-prompts { display: flex; gap: 8px; padding: 14px 20px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.rag-prompts::-webkit-scrollbar { display: none; }
+.rag-prompts button { flex: 0 0 auto; min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--sage); background: var(--paper); font-size: 13px; font-weight: 750; cursor: pointer; }
+.rag-prompts button:hover { border-color: var(--sage); background: var(--sage-soft); }
+.rag-messages { display: flex; min-height: 280px; padding: 22px; overflow-y: auto; flex-direction: column; gap: 14px; background: var(--paper-2); }
+.rag-message { width: fit-content; max-width: 82%; padding: 13px 15px; border: 1px solid var(--line); border-radius: 4px 17px 17px; background: var(--paper); box-shadow: 0 5px 15px rgba(47,34,24,.06); }
+.rag-message.user { align-self: flex-end; border-color: var(--sage); border-radius: 17px 4px 17px 17px; color: white; background: var(--sage); }
+.rag-message-label { display: block; margin-bottom: 5px; color: var(--terracotta); font-size: 11px; font-weight: 850; letter-spacing: .06em; }
+.rag-message.user .rag-message-label { color: #dcebdc; }
+.rag-message p { margin: 0; line-height: 1.65; white-space: pre-line; }
+.rag-sources { display: grid; gap: 7px; margin-top: 11px; }
+.rag-sources button { display: flex; width: 100%; min-height: 42px; align-items: center; justify-content: space-between; gap: 15px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; background: white; cursor: pointer; }
+.rag-sources button:hover { border-color: var(--sage); background: var(--sage-soft); }
+.rag-sources span { text-align: left; font-weight: 750; }
+.rag-sources strong { flex: 0 0 auto; color: var(--terracotta); }
+.rag-form { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; padding: 16px 20px 9px; background: var(--paper); }
+.rag-form textarea { min-height: 58px; max-height: 130px; padding: 13px 14px; resize: vertical; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); background: white; line-height: 1.5; }
+.rag-form .primary-button { min-height: 58px; }
+.rag-notice { margin: 0; padding: 0 20px 17px; color: var(--muted); background: var(--paper); font-size: 11px; }
 .option-groups { display: grid; gap: 22px; margin: 28px 0; }
 .option-group { padding-top: 20px; border-top: 1px solid var(--line); }
 .option-group legend { margin-bottom: 12px; font-weight: 800; }
@@ -379,6 +419,8 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .cart-heading .eyebrow, .cart-heading h2, .cart-count, .cart-items, .cart-summary, .payment-note { display: none; }
   .cart-heading::after { content: attr(data-mobile-label); align-self: center; font-weight: 750; }
   .checkout-button { width: min(330px, 58vw); gap: 20px; }
+  .rag-modal { max-height: calc(100vh - 24px); }
+  .rag-shell { max-height: calc(100vh - 24px); }
 }
 
 @media (max-width: 580px) {
@@ -386,6 +428,8 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .brand-mark { width: 40px; height: 40px; }
   .brand strong { font-size: 18px; }
   #languageButton { display: none; }
+  .assistant-button { padding: 0 12px; }
+  .assistant-label { display: none; }
   .ghost-button { min-height: 40px; padding: 0 13px; }
   h1 { font-size: 34px; }
   .order-type { width: 100%; }
@@ -398,6 +442,13 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .menu-grid { grid-template-columns: 1fr; }
   .menu-card { min-height: 165px; }
   .modal { padding: 25px 20px; }
+  .rag-modal { padding: 0; }
+  .rag-heading { padding: 24px 64px 17px 20px; }
+  .rag-messages { min-height: 260px; padding: 16px; }
+  .rag-message { max-width: 92%; }
+  .rag-form { grid-template-columns: 1fr; padding: 13px 16px 8px; }
+  .rag-form .primary-button { min-height: 48px; }
+  .rag-notice { padding-inline: 16px; }
   .option-choice-grid, .payment-methods, .staff-orders { grid-template-columns: 1fr; }
   .cart-panel { grid-template-columns: .8fr 1.2fr; }
   .checkout-button { width: 100%; min-height: 52px; padding: 0 15px; }

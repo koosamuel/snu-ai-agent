@@ -30,12 +30,14 @@ GitHub에서 Pull Request를 만들고 아래 확인 항목을 작성합니다. 
 | `index.html` | 고객·운영자 화면 구조와 접근성 문구 |
 | `styles.css` | 태블릿·모바일 화면과 시각 디자인 |
 | `app.js` | 메뉴, 옵션, 장바구니, 주문, 운영자 화면 로직 |
+| `rag-assistant.js` | 메뉴 문서 검색, 추천·비교·주문 의도와 검증 로직 |
 | `menu.json` | Supabase 연결 전 데모 메뉴 |
 | `config.js` | 공개용 Supabase URL·Publishable Key와 데모 설정 |
 | `supabase/schema.sql` | 테이블, RLS, 주문 생성 함수와 초기 메뉴 |
 | `sw.js`, `manifest.webmanifest` | PWA와 정적 자산 캐시 |
 | `README.md` | 실행·설정·배포 안내 |
 | `PROJECT_NOTES.md` | 합의된 구조, 현재 구현과 다음 작업 |
+| `tests/` | 주문 도우미 검색·의도·장바구니 자동 테스트 |
 
 ## 4. 역할 분담 예시
 
