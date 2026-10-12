@@ -505,14 +505,34 @@ function removeMenuFromCart(itemId, quantity) {
   return removed;
 }
 
+function ragOptionsFor(item, requestedIds = []) {
+  const requested = new Set(requestedIds);
+  const groups = groupOptions(item);
+  return Object.entries(groups).flatMap(([groupName, options]) => {
+    const selected = options.filter((option) => requested.has(option.id));
+    if (groupName === "추가") return selected;
+    return selected.length ? [selected[0]] : options.slice(0, 1);
+  });
+}
+
 function applyRagAction(result) {
   if (!result.action) return result.answer;
+
+  if (result.action.type === "clear") {
+    state.cart = [];
+    renderCart();
+    toast("장바구니를 비웠습니다.");
+    return result.answer;
+  }
+
   const item = state.items.find((candidate) => candidate.id === result.action.itemId && candidate.available !== false);
   if (!item) return "현재 주문 가능한 메뉴를 찾지 못했습니다. 메뉴 목록을 다시 확인해 주세요.";
 
   if (result.action.type === "add") {
-    addItemToCart(item, defaultOptionsFor(item), Number(result.action.quantity || 1));
-    toast(`${item.name}을(를) 기본 옵션으로 담았습니다.`);
+    const selectedOptions = ragOptionsFor(item, result.action.optionIds || []);
+    addItemToCart(item, selectedOptions, Number(result.action.quantity || 1));
+    const optionSummary = selectedOptions.map((option) => option.name).join(" · ");
+    toast(`${item.name}을(를) ${optionSummary || "기본 옵션"}으로 담았습니다.`);
     return result.answer;
   }
 
@@ -527,6 +547,7 @@ function applyRagAction(result) {
 
 function sendRagMessage(message) {
   const assistant = window.CafeRagAssistant;
+  const history = state.ragMessages.map((entry) => ({ role: entry.role, text: entry.text }));
   appendRagMessage("user", message);
   if (!assistant?.respond) {
     appendRagMessage("assistant", "주문 도우미를 불러오지 못했습니다. 화면을 새로고침해 주세요.");
@@ -537,9 +558,18 @@ function sendRagMessage(message) {
     return;
   }
 
-  const result = assistant.respond({ message, items: state.items, cart: state.cart });
+  const result = assistant.respond({ message, items: state.items, options: state.options, cart: state.cart, history });
   const answer = applyRagAction(result);
   appendRagMessage("assistant", answer, result.retrieved || []);
+}
+
+function resetRagSession() {
+  state.ragMessages = [];
+  state.cart = [];
+  $("#ragMessages").innerHTML = "";
+  renderCart();
+  appendRagMessage("assistant", "새 주문을 시작했습니다. 메뉴 정보, 추천, 비교 또는 옵션 주문을 말씀해 주세요.");
+  toast("대화와 장바구니를 초기화했습니다.");
 }
 
 function submitRagMessage(event) {
@@ -653,6 +683,7 @@ $("#staffLoginForm").addEventListener("submit", staffLogin);
 $("#demoStaffButton").addEventListener("click", async () => { state.staffDemo = true; await showStaffBoard(); });
 $("#staffLogoutButton").addEventListener("click", staffLogout);
 $("#ragButton").addEventListener("click", openRagAssistant);
+$("#ragResetButton").addEventListener("click", resetRagSession);
 $("#ragForm").addEventListener("submit", submitRagMessage);
 $("#ragInput").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {

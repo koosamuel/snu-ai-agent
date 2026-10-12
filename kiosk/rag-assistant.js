@@ -35,6 +35,31 @@
     고소한: ["부드러운", "우유", "라테"],
   };
 
+  const MEAL_PAIRINGS = [
+    { label: "샌드위치", aliases: ["샌드위치", "토스트", "햄버거"], recommendations: [
+      ["americano", "깔끔하고 쌉쌀해 빵과 속재료의 풍미를 정리해 줍니다."],
+      ["cafe-latte", "부드럽고 고소해 담백한 샌드위치와 잘 어울립니다."],
+      ["earl-grey", "베르가못 향이 산뜻해 채소나 햄과 균형을 이룹니다."],
+    ] },
+    { label: "샐러드", aliases: ["샐러드", "채소식", "야채식"], recommendations: [
+      ["earl-grey", "향긋하고 깔끔해 신선한 채소 맛을 해치지 않습니다."],
+      ["citron-tea", "상큼한 유자 향이 가벼운 샐러드와 잘 어울립니다."],
+      ["lemon-ade", "산뜻하고 청량해 고소한 드레싱과 균형을 이룹니다."],
+    ] },
+    { label: "파스타", aliases: ["파스타", "스파게티", "면요리"], recommendations: [
+      ["americano", "쌉쌀하고 깔끔해 크림이나 치즈의 묵직함을 정리해 줍니다."],
+      ["lemon-ade", "상큼한 풍미가 진한 소스 뒤 입안을 산뜻하게 합니다."],
+      ["citron-tea", "유자 향이 오일이나 토마토소스와 가볍게 어울립니다."],
+    ] },
+    { label: "치킨", aliases: ["치킨", "닭요리", "닭고기"], recommendations: [
+      ["citron-tea", "상큼한 유자 향이 기름진 맛을 정리해 줍니다."],
+      ["lemon-ade", "청량한 탄산이 튀김이나 양념과 잘 어울립니다."],
+      ["americano", "단맛이 적고 쌉쌀해 치킨의 풍미를 방해하지 않습니다."],
+    ] },
+  ];
+
+  const SHORT_CONTEXT_PATTERN = /^(네|예|응|그래|좋아|둘\s*다|그걸로|그거|둘\s*모두)[.!~]?$/u;
+
   const STOP_WORDS = new Set(["메뉴", "음료", "추천", "추천해", "추천해줘", "알려", "알려줘", "주세요", "주문", "담아", "담아줘", "비교", "차이", "가격", "얼마", "뭐가", "어떤", "해줘", "해", "좀"]);
 
   function normalize(value = "") {
@@ -56,8 +81,21 @@
       .filter((token) => token.length >= 2 && !STOP_WORDS.has(token));
   }
 
+  function ngrams(value, size = 2) {
+    const valueCompact = compact(value);
+    const result = new Set();
+    for (let index = 0; index <= valueCompact.length - size; index += 1) result.add(valueCompact.slice(index, index + size));
+    return result;
+  }
+
+  function matchingMealPairings(message) {
+    const query = compact(message);
+    return MEAL_PAIRINGS.filter((guide) => guide.aliases.some((alias) => query.includes(compact(alias))));
+  }
+
   function itemDocument(item) {
     const knowledge = KNOWLEDGE[item.id] || {};
+    const pairingTerms = MEAL_PAIRINGS.flatMap((guide) => guide.recommendations.some(([itemId]) => itemId === item.id) ? [guide.label, ...guide.aliases] : []);
     return normalize([
       item.name,
       item.description,
@@ -65,6 +103,7 @@
       knowledge.caffeine,
       ...(knowledge.aliases || []),
       ...(knowledge.tags || []),
+      ...pairingTerms,
     ].join(" "));
   }
 
@@ -89,6 +128,12 @@
     const names = [item.name, ...(knowledge.aliases || [])].map(compact);
     const document = itemDocument(item);
     let score = 0;
+
+    const queryGrams = ngrams(query);
+    const documentGrams = ngrams(document);
+    let overlap = 0;
+    queryGrams.forEach((gram) => { if (documentGrams.has(gram)) overlap += 1; });
+    score += (overlap / Math.max(1, queryGrams.size)) * 8;
 
     names.forEach((name) => {
       if (name && compactQuery.includes(name)) score += 18;
@@ -124,6 +169,29 @@
     const words = { 한: 1, 하나: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 네: 4, 넷: 4 };
     const wordMatch = normalize(message).match(/(한|하나|두|둘|세|셋|네|넷)\s*(잔|개|조각|병)/u);
     return wordMatch ? words[wordMatch[1]] : 1;
+  }
+
+  function conversationQuery(message, history = []) {
+    if (!SHORT_CONTEXT_PATTERN.test(normalize(message))) return message;
+    const previousUser = [...history].reverse().find((entry) => entry?.role === "user" && entry.text);
+    return previousUser ? `${previousUser.text} ${message}` : message;
+  }
+
+  function requestedOptionIds(message, options = []) {
+    const text = normalize(message);
+    const tests = [
+      ["temp-ice", /아아|아이스|ice|차갑/u],
+      ["temp-hot", /핫|따뜻|뜨겁/u],
+      ["size-large", /(?:^|\s)l(?:\s|$)|라지|large/u],
+      ["size-regular", /(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular/u],
+      ["extra-shot", /샷\s*추가|샷/u],
+      ["extra-decaf", /디카페인/u],
+      ["extra-oat", /오트\s*밀크|오트밀크/u],
+      ["warm-dessert", /데워|따뜻하게/u],
+      ["plain-dessert", /그대로/u],
+    ];
+    const available = new Set(options.map((option) => option.id));
+    return tests.filter(([id, pattern]) => available.has(id) && pattern.test(text)).map(([id]) => id);
   }
 
   function cartSummary(cart) {
@@ -166,6 +234,7 @@
 
   function inferIntent(message) {
     const query = normalize(message);
+    if (/(전체|전부|장바구니).*?(비워|취소|삭제)|주문\s*초기화/u.test(query)) return "clear";
     if (/빼|제거|삭제|취소/u.test(query)) return "remove";
     if (/장바구니|담긴|합계|총액/u.test(query)) return "cart";
     if (/비교|차이|뭐가 더/u.test(query)) return "compare";
@@ -175,11 +244,37 @@
     return "inform";
   }
 
-  function respond({ message, items = [], cart = [] }) {
-    const text = normalize(message);
+  function pairingResponse(items, message) {
+    const guides = matchingMealPairings(message);
+    const asksGeneric = /식사\s*메뉴|식사.*어울|음식.*어울|페어링|같이\s*먹|곁들/u.test(message);
+    if (!guides.length && !asksGeneric) return null;
+    if (!guides.length) return { intent: "clarify", answer: "샌드위치·샐러드·파스타·치킨 중 함께 드실 음식을 말씀해 주세요.", retrieved: [] };
+
+    const picks = [];
+    guides.forEach((guide) => guide.recommendations.forEach(([itemId, reason]) => {
+      const item = items.find((candidate) => candidate.id === itemId && candidate.available !== false);
+      if (item && !picks.some((row) => row.item.id === item.id) && picks.length < 3) picks.push({ item, reason });
+    }));
+    return {
+      intent: "recommend",
+      answer: `${guides.map((guide) => guide.label).join("·")}에 어울리는 현재 판매 메뉴입니다.\n${picks.map((row, index) => `${index + 1}. ${row.item.name}(${won(row.item.price)}): ${row.reason}`).join("\n")}`,
+      retrieved: picks.map((row) => row.item),
+    };
+  }
+
+  function respond({ message, items = [], options = [], cart = [], history = [] }) {
+    const contextualMessage = conversationQuery(message, history);
+    const text = normalize(contextualMessage);
     const intent = inferIntent(text);
     const retrieved = retrieveMenu(items, text, intent === "compare" ? 6 : 4);
     const itemRows = retrieved.map((row) => row.item);
+
+    const pairing = pairingResponse(items, text);
+    if (pairing && intent !== "order") return pairing;
+
+    if (intent === "clear") {
+      return { intent, answer: "장바구니의 모든 메뉴를 비웠습니다.", action: { type: "clear" }, retrieved: [] };
+    }
 
     if (intent === "cart") {
       return { intent, answer: cartSummary(cart), retrieved: [] };
@@ -200,10 +295,11 @@
       const target = itemRows[0];
       if (!target) return { intent: "clarify", answer: "담을 메뉴 이름을 말씀해 주세요. 예: ‘아메리카노 두 잔 담아 줘’." , retrieved: [] };
       const quantity = parseQuantity(text);
+      const optionIds = requestedOptionIds(message, options);
       return {
         intent,
-        answer: `${target.name} ${quantity}개를 기본 옵션으로 장바구니에 담았습니다. 온도·크기 변경은 메뉴 카드를 눌러 조정할 수 있어요.`,
-        action: { type: "add", itemId: target.id, quantity },
+        answer: `${target.name} ${quantity}개를 요청한 옵션으로 장바구니에 반영했습니다.`,
+        action: { type: "add", itemId: target.id, quantity, ...(optionIds.length ? { optionIds } : {}) },
         retrieved: [target],
       };
     }
@@ -249,5 +345,5 @@
     };
   }
 
-  return { inferIntent, normalize, parseQuantity, retrieveMenu, respond, scoreItem };
+  return { conversationQuery, inferIntent, matchingMealPairings, ngrams, normalize, parseQuantity, requestedOptionIds, retrieveMenu, respond, scoreItem };
 }));
