@@ -1,0 +1,12 @@
+{
+  "name": "모닝브루 카페 키오스크",
+  "short_name": "모닝브루",
+  "description": "메뉴 선택과 주문 접수를 위한 태블릿 카페 키오스크",
+  "lang": "ko-KR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f0e7",
+  "theme_color": "#2f4a3b"
+}

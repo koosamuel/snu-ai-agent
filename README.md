@@ -7,9 +7,12 @@
 ```text
 snu-ai-agent/
 ├── docs/                 # GitHub Pages 정적 대시보드와 Supabase 설정
+├── kiosk/                # 모닝브루 카페 키오스크 공동 작업 소스
 ├── sales_data_analysis/  # Flask 판매 데이터 분석 실습
 └── projects/             # 이후 과제와 AI Agent 프로젝트
 ```
+
+카페 키오스크는 `kiosk/README.md`와 `kiosk/CONTRIBUTING.md`를 먼저 읽고 기능별 브랜치에서 작업합니다. `main`에는 검토가 끝난 Pull Request만 병합합니다.
 
 ## 실습 실행
 

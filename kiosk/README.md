@@ -1,0 +1,93 @@
+# 모닝브루 카페 키오스크
+
+태블릿에서 메뉴 선택·옵션·장바구니·주문 접수를 처리하고, 운영자 화면에서 주문 상태를 실시간으로 관리하는 정적 웹 키오스크입니다.
+
+## 구조
+
+```text
+GitHub Pages 정적 클라이언트
+├─ 메뉴 선택·옵션·장바구니·주문 확인
+├─ PWA 정적 자산 캐시
+└─ Supabase Publishable Key
+          ↓
+Supabase
+├─ Postgres: 메뉴·옵션·주문·주문 항목
+├─ Auth: 운영자 로그인
+├─ RLS: 공개 읽기와 운영자 권한 분리
+├─ RPC: 서버 검증 가격 계산과 주문 생성
+└─ Realtime: 운영자 주문판 갱신
+```
+
+클라이언트가 전송한 가격은 신뢰하지 않습니다. `create_kiosk_order` 함수가 활성 메뉴와 옵션 가격을 데이터베이스에서 다시 조회해 총액을 계산합니다.
+
+## 주요 기능
+
+- 전체·커피·논커피·티·디저트 분류와 검색
+- HOT/ICE, 크기, 샷·디카페인·오트 밀크 등 옵션
+- 장바구니 수량 변경과 포장/매장 선택
+- 카드 또는 카운터 결제 요청과 주문번호 발급
+- 운영자용 `접수 → 제조 중 → 픽업 대기 → 완료` 주문판
+- Supabase 미설정 상태에서도 확인할 수 있는 데모 모드
+- 태블릿·모바일 반응형 화면과 PWA 정적 자산 캐시
+- WebMCP 지원 브라우저에서 메뉴 조회·장바구니 추가·주문 접수 도구 등록
+
+실제 카드 승인은 포함하지 않습니다. 결제 단말 업체의 SDK 또는 POS 연동을 별도로 검토해야 합니다.
+
+## 로컬 실행
+
+저장소를 받은 뒤 `kiosk` 폴더에서 정적 서버를 실행합니다. 별도 패키지 설치는 필요하지 않습니다.
+
+```bash
+git clone https://github.com/koosamuel/snu-ai-agent.git
+cd snu-ai-agent/kiosk
+python3 -m http.server 8000
+```
+
+`http://localhost:8000`을 엽니다. 현재 `config.js`는 `DEMO_MODE: true`이므로 Supabase 없이도 주문 흐름과 데모 운영판을 확인할 수 있습니다.
+
+## Supabase 연결
+
+1. 카페용 Supabase 프로젝트를 새로 만듭니다.
+2. SQL Editor에서 `supabase/schema.sql` 전체를 실행합니다.
+3. Authentication에서 운영자 사용자를 생성합니다.
+4. `schema.sql` 마지막의 운영자 등록 예시에서 이메일을 바꿔 실행합니다.
+5. `config.js`에 Project URL과 **Publishable Key**를 입력하고 `DEMO_MODE`를 `false`로 바꿉니다.
+6. 일반 화면 주문과 운영자 로그인을 각각 시험합니다.
+
+```js
+window.CAFE_CONFIG = {
+  SUPABASE_URL: "https://YOUR_PROJECT.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "YOUR_PUBLISHABLE_KEY",
+  DEMO_MODE: false,
+};
+```
+
+Publishable Key는 RLS를 전제로 브라우저에서 사용하는 공개 식별자입니다. 데이터베이스 비밀번호, Secret Key, `service_role` 키는 `config.js`나 GitHub 저장소에 넣지 않습니다.
+
+## 공동 작업
+
+공동 작업 규칙과 파일별 담당 범위는 `CONTRIBUTING.md`를 따릅니다. `main`에서 직접 작업하지 않고 `feature/kiosk-기능명` 형식의 브랜치를 만든 뒤 Pull Request로 병합합니다.
+
+이 저장소의 기존 GitHub Pages 원본은 `docs/`이므로 `kiosk/`를 추가하는 것만으로 카페 키오스크가 자동 배포되지는 않습니다. `kiosk/`는 협업용 소스 정본이며, 배포 방식은 팀에서 별도로 결정합니다.
+
+## 정적 배포 결과 생성
+
+모든 경로가 상대 경로로 작성되어 GitHub Project Pages를 포함한 정적 호스팅에서 동작합니다.
+
+배포 전 정적 결과물을 만들려면 다음을 실행합니다.
+
+```bash
+chmod +x scripts/build-static.sh
+./scripts/build-static.sh
+```
+
+`dist/`는 별도 정적 호스팅 또는 미리보기용 결과물입니다.
+
+## 운영 전 확인
+
+- 실제 메뉴명·가격·품절 상태 반영
+- 운영자 계정과 `staff_profiles` 권한 확인
+- 익명 사용자가 주문 목록을 읽거나 수정할 수 없는지 확인
+- 서로 다른 두 기기에서 주문 접수와 Realtime 갱신 확인
+- 네트워크 장애 시 안내와 복구 확인
+- 결제 단말 연동 전 화면에 결제 완료로 표시하지 않기

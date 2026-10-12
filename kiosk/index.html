@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2f4a3b" />
+  <meta name="description" content="메뉴 선택부터 주문번호 발급까지 한 화면에서 처리하는 모닝브루 카페 키오스크" />
+  <meta property="og:title" content="모닝브루 카페 키오스크" />
+  <meta property="og:description" content="천천히 골라도, 주문은 빠르게" />
+  <meta property="og:image" content="./assets/og-cafe-kiosk.png" />
+  <meta property="og:type" content="website" />
+  <title>모닝브루 카페 키오스크</title>
+  <link rel="icon" href="./assets/featured-cafe.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
+
+  <header class="topbar">
+    <div class="brand" aria-label="모닝브루 카페 홈">
+      <span class="brand-mark" aria-hidden="true">M</span>
+      <span><strong>모닝브루</strong><small>MORNING BREW</small></span>
+    </div>
+    <div class="top-actions">
+      <span id="connectionStatus" class="connection-status" role="status">메뉴 준비 중</span>
+      <button id="languageButton" class="ghost-button" type="button" aria-label="언어 변경">한 / EN</button>
+      <button id="staffButton" class="ghost-button" type="button">운영자</button>
+    </div>
+  </header>
+
+  <main class="kiosk-shell">
+    <section class="menu-panel" aria-labelledby="menuTitle">
+      <div class="welcome-row">
+        <div>
+          <p class="eyebrow">오늘도 반갑습니다</p>
+          <h1 id="menuTitle">어떤 메뉴로 시작할까요?</h1>
+          <p>메뉴를 누르면 온도·크기·추가 옵션을 고를 수 있어요.</p>
+        </div>
+        <div class="order-type" role="group" aria-label="주문 유형">
+          <button class="order-type-button active" type="button" data-order-type="takeout">포장</button>
+          <button class="order-type-button" type="button" data-order-type="dine_in">매장</button>
+        </div>
+      </div>
+
+      <article class="feature-card">
+        <img src="./assets/featured-cafe.png" alt="아이스 라테, 카푸치노와 크루아상으로 구성된 추천 메뉴" />
+        <div class="feature-copy">
+          <span>Morning Pick</span>
+          <h2>라테와 크루아상,<br />포근한 아침 한 세트</h2>
+          <p>추천 메뉴를 각각 장바구니에 담아 나만의 세트를 만들어 보세요.</p>
+        </div>
+      </article>
+
+      <nav id="categoryTabs" class="category-tabs" aria-label="메뉴 분류"></nav>
+
+      <div class="menu-toolbar">
+        <div>
+          <p class="eyebrow">MENU</p>
+          <h2 id="categoryTitle">전체 메뉴</h2>
+        </div>
+        <label class="search-field">
+          <span class="sr-only">메뉴 검색</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" /></svg>
+          <input id="searchInput" type="search" placeholder="메뉴 검색" autocomplete="off" />
+        </label>
+      </div>
+
+      <div id="menuGrid" class="menu-grid" aria-live="polite"></div>
+    </section>
+
+    <aside class="cart-panel" aria-labelledby="cartTitle">
+      <div class="cart-heading">
+        <div>
+          <p class="eyebrow">MY ORDER</p>
+          <h2 id="cartTitle">주문 내역</h2>
+        </div>
+        <span id="cartCount" class="cart-count">0</span>
+      </div>
+      <div id="cartItems" class="cart-items"></div>
+      <div class="cart-summary">
+        <div><span>상품 금액</span><strong id="subtotal">0원</strong></div>
+        <div><span>할인</span><strong>0원</strong></div>
+        <div class="cart-total"><span>결제 예정 금액</span><strong id="total">0원</strong></div>
+      </div>
+      <button id="checkoutButton" class="primary-button checkout-button" type="button" disabled>
+        <span id="checkoutLabel">메뉴를 담아 주세요</span>
+        <strong id="checkoutTotal">0원</strong>
+      </button>
+      <p class="payment-note">※ 실제 카드 승인 기능은 결제 단말 연동 후 사용할 수 있습니다.</p>
+    </aside>
+  </main>
+
+  <dialog id="optionDialog" class="modal option-modal">
+    <form id="optionForm" method="dialog">
+      <button class="close-button" type="button" data-close="optionDialog" aria-label="닫기">×</button>
+      <p class="eyebrow">CUSTOMIZE</p>
+      <h2 id="optionItemName">메뉴 옵션</h2>
+      <p id="optionItemDescription" class="modal-description"></p>
+      <div id="optionGroups" class="option-groups"></div>
+      <div class="quantity-row">
+        <span>수량</span>
+        <div class="stepper" aria-label="수량 선택">
+          <button id="decreaseQuantity" type="button" aria-label="수량 줄이기">−</button>
+          <output id="optionQuantity">1</output>
+          <button id="increaseQuantity" type="button" aria-label="수량 늘리기">＋</button>
+        </div>
+      </div>
+      <button id="addToCartButton" class="primary-button" type="submit">장바구니에 담기</button>
+    </form>
+  </dialog>
+
+  <dialog id="checkoutDialog" class="modal checkout-modal">
+    <form id="checkoutForm" method="dialog">
+      <button class="close-button" type="button" data-close="checkoutDialog" aria-label="닫기">×</button>
+      <p class="eyebrow">CHECKOUT</p>
+      <h2>주문 내용을 확인해 주세요</h2>
+      <div id="checkoutSummary" class="checkout-summary"></div>
+      <fieldset class="payment-methods">
+        <legend>결제 방법</legend>
+        <label><input type="radio" name="paymentMethod" value="card" checked /><span><strong>카드 결제</strong><small>단말기에서 결제</small></span></label>
+        <label><input type="radio" name="paymentMethod" value="counter" /><span><strong>카운터 결제</strong><small>직원에게 직접 결제</small></span></label>
+      </fieldset>
+      <label class="consent-row"><input id="orderConsent" type="checkbox" required /> <span>메뉴와 주문 유형을 확인했습니다.</span></label>
+      <button id="placeOrderButton" class="primary-button" type="submit">주문 접수하기</button>
+      <p id="checkoutError" class="form-error" role="alert"></p>
+    </form>
+  </dialog>
+
+  <dialog id="successDialog" class="modal success-modal">
+    <div class="success-icon" aria-hidden="true">✓</div>
+    <p class="eyebrow">ORDER RECEIVED</p>
+    <h2>주문이 접수되었습니다</h2>
+    <p>준비가 완료되면 주문번호를 불러드릴게요.</p>
+    <div class="order-number"><span>주문번호</span><strong id="orderNumber">000</strong></div>
+    <button id="newOrderButton" class="primary-button" type="button">새 주문 시작</button>
+  </dialog>
+
+  <dialog id="staffDialog" class="modal staff-modal">
+    <button class="close-button" type="button" data-close="staffDialog" aria-label="닫기">×</button>
+    <section id="staffLoginSection">
+      <p class="eyebrow">STAFF ONLY</p>
+      <h2>운영자 로그인</h2>
+      <form id="staffLoginForm" class="staff-login-form">
+        <label>이메일<input id="staffEmail" type="email" autocomplete="username" required /></label>
+        <label>비밀번호<input id="staffPassword" type="password" autocomplete="current-password" required /></label>
+        <button class="primary-button" type="submit">로그인</button>
+        <button id="demoStaffButton" class="secondary-button" type="button">데모 운영판 보기</button>
+        <p id="staffLoginError" class="form-error" role="alert"></p>
+      </form>
+    </section>
+    <section id="staffBoardSection" hidden>
+      <div class="staff-heading">
+        <div><p class="eyebrow">ORDER BOARD</p><h2>실시간 주문판</h2></div>
+        <button id="staffLogoutButton" class="ghost-button" type="button">로그아웃</button>
+      </div>
+      <div id="staffOrders" class="staff-orders"></div>
+    </section>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
