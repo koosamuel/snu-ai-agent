@@ -12,7 +12,7 @@ snu-ai-agent/
 └── projects/             # 이후 과제와 AI Agent 프로젝트
 ```
 
-카페 키오스크는 `kiosk/README.md`와 `kiosk/CONTRIBUTING.md`를 먼저 읽고 기능별 브랜치에서 작업합니다. `main`에는 검토가 끝난 Pull Request만 병합합니다.
+카페 키오스크는 `kiosk/README.md`와 `kiosk/CONTRIBUTING.md`를 먼저 읽고 `main/kiosk`에서 직접 공동 작업합니다. 작업 시작과 push 직전에 최신 `main`을 반영합니다.
 
 ## 실습 실행
 
@@ -24,10 +24,11 @@ python app.py
 
 기본 접속 주소는 `http://127.0.0.1:8082`입니다.
 
-## 외부 공개 대시보드
+## 외부 공개 카페 키오스크
 
-`docs/`는 GitHub Pages에서 실행되는 정적 버전입니다. 기본 상태에서는 샘플 CSV를 브라우저에서 직접 집계합니다. `docs/supabase/schema.sql`을 실행하고 `docs/config.js`에 Project URL과 Publishable anon key를 설정하면 Supabase의 인증·저장·실시간 동기화를 사용합니다.
+GitHub Actions가 `main/kiosk`의 테스트와 정적 빌드를 수행한 뒤 GitHub Pages에 배포합니다.
 
-- GitHub Pages 배포 원본: `main` 브랜치의 `/docs`
-- Supabase 설정 안내: `docs/supabase/README.md`
+- 공개 주소: https://koosamuel.github.io/snu-ai-agent/
+- GitHub Pages 배포 원본: `main` 브랜치의 `/kiosk`
+- 배포 워크플로: `.github/workflows/deploy-kiosk-pages.yml`
 - 비밀 키와 `service_role` 키는 저장소에 올리지 않습니다.

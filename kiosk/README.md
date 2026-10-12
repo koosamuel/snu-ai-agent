@@ -81,9 +81,12 @@ Publishable Key는 RLS를 전제로 브라우저에서 사용하는 공개 식�
 
 ## 공동 작업
 
-공동 작업 규칙과 파일별 담당 범위는 `CONTRIBUTING.md`를 따릅니다. `main`에서 직접 작업하지 않고 `feature/kiosk-기능명` 형식의 브랜치를 만든 뒤 Pull Request로 병합합니다.
+공동 작업 규칙과 파일별 담당 범위는 `CONTRIBUTING.md`를 따릅니다. 팀원은 `main/kiosk`에서 직접 작업하며, 작업 시작과 push 직전에 `git pull --rebase origin main`으로 최신 변경을 반영합니다.
 
-이 저장소의 기존 GitHub Pages 원본은 `docs/`이므로 `kiosk/`를 추가하는 것만으로 카페 키오스크가 자동 배포되지는 않습니다. `kiosk/`는 협업용 소스 정본이며, 배포 방식은 팀에서 별도로 결정합니다.
+`main/kiosk`에 변경이 push되면 GitHub Actions가 테스트와 정적 빌드를 수행하고 GitHub Pages에 자동 배포합니다.
+
+- 공개 주소: https://koosamuel.github.io/snu-ai-agent/
+- 배포 워크플로: `.github/workflows/deploy-kiosk-pages.yml`
 
 ## 정적 배포 결과 생성
 
@@ -96,7 +99,7 @@ chmod +x scripts/build-static.sh
 ./scripts/build-static.sh
 ```
 
-`dist/`는 별도 정적 호스팅 또는 미리보기용 결과물입니다.
+`dist/`는 GitHub Actions가 Pages에 업로드하는 배포 결과물이며 소스 저장소에는 커밋하지 않습니다.
 
 ## 운영 전 확인
 

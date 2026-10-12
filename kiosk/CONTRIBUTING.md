@@ -3,25 +3,28 @@
 ## 1. 기본 원칙
 
 - `main`은 실행 가능한 안정 버전으로 유지합니다.
-- 한 브랜치에는 한 기능이나 한 오류 수정만 포함합니다.
-- 작업 전 최신 `main`을 받고, 완료 후 Pull Request로 병합합니다.
+- 팀원은 별도 기능 브랜치 없이 `main/kiosk`에서 직접 작업합니다.
+- 작업 전과 push 직전에 최신 `main`을 반영합니다.
 - 다른 팀원의 파일을 크게 수정해야 하면 먼저 담당자와 범위를 공유합니다.
+- `main`에 강제 push하지 않습니다.
 - 실제 이용자 정보, 비밀번호, 데이터베이스 비밀번호, Secret Key와 `service_role` 키는 커밋하지 않습니다.
 
 ## 2. 권장 작업 순서
 
 ```bash
 git switch main
-git pull origin main
-git switch -c feature/kiosk-menu-filter
+git pull --rebase origin main
 
 # 작업과 로컬 확인
+npm --prefix kiosk test
+npm --prefix kiosk run check
 git add kiosk
 git commit -m "Add kiosk menu filter"
-git push -u origin feature/kiosk-menu-filter
+git pull --rebase origin main
+git push origin main
 ```
 
-GitHub에서 Pull Request를 만들고 아래 확인 항목을 작성합니다. 병합 전에는 가능하면 다른 팀원 한 명이 변경 내용을 확인합니다.
+동일 파일을 동시에 수정하지 않도록 작업 전에 담당 파일을 공유합니다. 충돌 해결이 불확실하면 강제 push하지 말고 팀원과 함께 확인합니다.
 
 ## 3. 파일별 역할
 
@@ -47,7 +50,7 @@ GitHub에서 Pull Request를 만들고 아래 확인 항목을 작성합니다. 
 - 백엔드: Supabase 스키마, RLS와 Realtime
 - QA·문서: 태블릿 점검, 테스트 결과와 안내서
 
-담당은 고정 소유권이 아니라 충돌을 줄이기 위한 기본 구분입니다. 공통 파일인 `app.js`와 `schema.sql`을 동시에 수정할 때는 먼저 Pull Request 순서를 정합니다.
+담당은 고정 소유권이 아니라 충돌을 줄이기 위한 기본 구분입니다. 공통 파일인 `app.js`와 `schema.sql`을 동시에 수정할 때는 먼저 작업 순서를 정합니다.
 
 ## 5. Supabase 변경 규칙
 
@@ -57,7 +60,7 @@ GitHub에서 Pull Request를 만들고 아래 확인 항목을 작성합니다. 
 - 새 데이터베이스 변경은 `supabase/migrations/YYYYMMDD_설명.sql` 파일로 추가하고, 적용 순서를 Pull Request에 기록합니다.
 - SQL 적용 전후에 일반 사용자와 운영자 권한을 각각 시험합니다.
 
-## 6. Pull Request 확인표
+## 6. Push 전 확인표
 
 - [ ] 변경 목적과 화면 또는 데이터 영향 범위를 적었다.
 - [ ] `python3 -m http.server 8000`으로 고객 주문 흐름을 확인했다.
