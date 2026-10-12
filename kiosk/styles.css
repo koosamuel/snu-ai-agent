@@ -300,8 +300,8 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .rag-inline .rag-statusbar, .rag-inline .rag-statusbar button, .rag-inline .rag-prompts button, .rag-inline .rag-notice { font-size: 1em; }
 .rag-inline .rag-message-label { font-size: .8em; }
 .rag-shell { display: grid; grid-template-rows: auto auto auto auto auto minmax(220px, 1fr); max-height: min(88vh, 850px); }
-.rag-heading { position: relative; padding: 28px 76px 19px 28px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #fffdf8, #eef3ec); }
-.rag-heading h2 { margin: 0 0 7px; }
+.rag-heading { position: relative; padding: 20px 28px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #fffdf8, #eef3ec); }
+.rag-heading h2 { margin: 0; }
 .rag-heading p:last-child { margin: 0; color: var(--muted); line-height: 1.55; }
 .rag-statusbar { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 20px; border-bottom: 1px solid var(--line); color: var(--muted); background: var(--paper); font-size: 12px; }
 .rag-statusbar span { display: inline-flex; align-items: center; gap: 7px; font-weight: 750; }
@@ -426,7 +426,7 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .menu-card { min-height: 165px; }
   .modal { padding: 25px 20px; }
   .rag-modal { padding: 0; }
-  .rag-heading { padding: 24px 20px 17px; }
+  .rag-heading { padding: 18px 20px; }
   .rag-messages { min-height: 260px; padding: 16px; }
   .rag-message { max-width: 92%; }
   .rag-form { grid-template-columns: 1fr; padding: 13px 16px 8px; }
