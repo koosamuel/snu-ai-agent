@@ -718,7 +718,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=3").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;
