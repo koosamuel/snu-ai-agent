@@ -12,7 +12,7 @@
   <title>카페 키오스크 - 1조</title>
   <link rel="icon" href="./assets/featured-cafe.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=20" />
+  <link rel="stylesheet" href="./styles.css?v=21" />
 </head>
 <body>
   <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
@@ -116,6 +116,10 @@
       <p class="feedback-intro">키오스크를 사용하며 느낀 점을 간단히 남겨 주세요.</p>
 
       <form id="feedbackForm" class="feedback-form">
+        <label class="feedback-name">
+          <span>이름</span>
+          <input id="feedbackName" name="name" type="text" maxlength="20" placeholder="예: 홍길동" required />
+        </label>
         <label class="feedback-comment">
           <span>의견</span>
           <textarea id="feedbackComment" name="comment" rows="5" maxlength="1000" placeholder="예: 메뉴 검색이 편리했습니다." required></textarea>
@@ -206,6 +210,6 @@
   <script src="./config.js?v=20" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="./rag-assistant.js?v=20" defer></script>
-  <script src="./app.js?v=20" defer></script>
+  <script src="./app.js?v=21" defer></script>
 </body>
 </html>

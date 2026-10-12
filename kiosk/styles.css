@@ -197,7 +197,10 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .feedback-intro { margin-bottom: 32px; color: var(--muted); }
 .feedback-form { display: grid; gap: 28px; }
 .feedback-form fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-.feedback-form legend, .feedback-comment > span { display: block; margin-bottom: 12px; font-weight: 800; }
+.feedback-form legend, .feedback-comment > span, .feedback-name > span { display: block; margin-bottom: 12px; font-weight: 800; }
+.feedback-name { display: grid; width: min(220px, 100%); gap: 8px; }
+.feedback-name > span { margin-bottom: 0; }
+.feedback-name input { width: 100%; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .rating-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .rating-options label, .feedback-tags label { cursor: pointer; }
 .rating-options input, .feedback-tags input { position: absolute; opacity: 0; pointer-events: none; }

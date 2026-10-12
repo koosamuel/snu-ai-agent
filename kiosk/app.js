@@ -79,6 +79,7 @@ const staticTranslations = [
   [".payment-note", "※ 실제 카드 승인 기능은 결제 단말 연동 후 사용할 수 있습니다.", "※ Card authorization requires a connected payment terminal."],
   ["#feedbackPanel h1", "추가 의견", "Additional Feedback"],
   [".feedback-intro", "키오스크를 사용하며 느낀 점을 간단히 남겨 주세요.", "Leave a short note about your kiosk experience."],
+  [".feedback-name > span", "이름", "Name"],
   [".feedback-comment > span", "의견", "Feedback"],
   ["#feedbackSubmitButton", "의견 저장", "Save Feedback"],
   ["#feedbackHistoryTitle", "저장된 의견", "Saved Feedback"],
@@ -104,6 +105,7 @@ function applyLanguage() {
   });
   $("#ragInput").placeholder = tr("예: 아메리카노 두 잔 담아 줘", "e.g. Add two Americanos");
   $("#searchInput").placeholder = tr("메뉴 검색", "Search menu");
+  $("#feedbackName").placeholder = tr("예: 홍길동", "e.g. Alex");
   $("#feedbackComment").placeholder = tr("예: 메뉴 검색이 편리했습니다.", "e.g. The menu search was convenient.");
   setConnection(state.connectionMessage, state.connectionMode);
   renderCategories();
@@ -190,8 +192,13 @@ function renderFeedbackHistory() {
 function submitFeedback(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const author = $("#feedbackName").value.trim().replace(/님$/u, "");
   const note = $("#feedbackComment").value.trim();
   const status = $("#feedbackStatus");
+  if (!author) {
+    status.textContent = tr("이름을 입력해 주세요.", "Please enter your name.");
+    return;
+  }
   if (!note) {
     status.textContent = tr("의견을 입력해 주세요.", "Please enter your feedback.");
     return;
@@ -199,6 +206,7 @@ function submitFeedback(event) {
   const records = feedbackRecords();
   records.push({
     id: crypto.randomUUID?.() || `feedback-${Date.now()}`,
+    author,
     note,
     order_type: state.orderType,
     created_at: new Date().toISOString(),
@@ -940,7 +948,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=20").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=21").catch(console.error));
 
 renderCart();
 applyLanguage();
