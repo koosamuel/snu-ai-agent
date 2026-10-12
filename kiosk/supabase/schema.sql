@@ -48,7 +48,8 @@ create sequence if not exists public.cafe_order_number_seq start 101;
 
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
-  order_number text not null,
+  request_id uuid not null unique,
+  order_number text not null unique,
   order_type text not null check (order_type in ('takeout', 'dine_in')),
   payment_method text not null check (payment_method in ('card', 'counter')),
   payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'failed', 'refunded')),
@@ -137,14 +138,18 @@ create policy "staff reads order items" on public.order_items
 for select to authenticated using (public.is_cafe_staff());
 
 grant select on public.categories, public.menu_items, public.menu_options to anon, authenticated;
-grant select, update on public.orders to authenticated;
+grant select on public.orders to authenticated;
+revoke update on public.orders from authenticated;
 grant select on public.order_items, public.staff_profiles to authenticated;
 grant insert, update, delete on public.categories, public.menu_items, public.menu_options to authenticated;
+
+drop function if exists public.create_kiosk_order(text, text, jsonb);
 
 create or replace function public.create_kiosk_order(
   p_order_type text,
   p_payment_method text,
-  p_items jsonb
+  p_items jsonb,
+  p_request_id uuid
 )
 returns jsonb
 language plpgsql
@@ -159,10 +164,15 @@ declare
   v_menu public.menu_items%rowtype;
   v_quantity integer;
   v_option_ids text[];
+  v_requested_option_count integer;
+  v_valid_option_count integer;
   v_option_total integer;
   v_option_summary text;
   v_unit_price integer;
 begin
+  if p_request_id is null then
+    raise exception 'request id is required';
+  end if;
   if p_order_type not in ('takeout', 'dine_in') then
     raise exception 'invalid order type';
   end if;
@@ -173,10 +183,28 @@ begin
     raise exception 'order must contain 1 to 30 lines';
   end if;
 
-  v_order_number := lpad((nextval('public.cafe_order_number_seq') % 1000)::text, 3, '0');
-  insert into public.orders (order_number, order_type, payment_method)
-  values (v_order_number, p_order_type, p_payment_method)
+  select id, order_number, total_amount
+    into v_order_id, v_order_number, v_total
+  from public.orders
+  where request_id = p_request_id;
+
+  if found then
+    return jsonb_build_object('id', v_order_id, 'order_number', v_order_number, 'total_amount', v_total, 'status', 'received', 'duplicate', true);
+  end if;
+
+  v_order_number := lpad(nextval('public.cafe_order_number_seq')::text, 4, '0');
+  insert into public.orders (request_id, order_number, order_type, payment_method)
+  values (p_request_id, v_order_number, p_order_type, p_payment_method)
+  on conflict (request_id) do nothing
   returning id into v_order_id;
+
+  if v_order_id is null then
+    select id, order_number, total_amount
+      into v_order_id, v_order_number, v_total
+    from public.orders
+    where request_id = p_request_id;
+    return jsonb_build_object('id', v_order_id, 'order_number', v_order_number, 'total_amount', v_total, 'status', 'received', 'duplicate', true);
+  end if;
 
   for v_item in select value from jsonb_array_elements(p_items)
   loop
@@ -192,9 +220,33 @@ begin
       raise exception 'menu item is not available';
     end if;
 
-    select coalesce(array_agg(value), array[]::text[])
-      into v_option_ids
+    if jsonb_typeof(coalesce(v_item->'option_ids', '[]'::jsonb)) <> 'array' then
+      raise exception 'option_ids must be an array';
+    end if;
+
+    select count(*), coalesce(array_agg(distinct value), array[]::text[])
+      into v_requested_option_count, v_option_ids
     from jsonb_array_elements_text(coalesce(v_item->'option_ids', '[]'::jsonb));
+
+    select count(*)
+      into v_valid_option_count
+    from public.menu_options
+    where menu_item_id = v_menu.id and active = true and id = any(v_option_ids);
+
+    if v_requested_option_count <> v_valid_option_count then
+      raise exception 'one or more options are invalid or duplicated';
+    end if;
+
+    if exists (
+      select 1
+      from public.menu_options
+      where menu_item_id = v_menu.id and active = true and id = any(v_option_ids)
+        and group_name <> '추가'
+      group by group_name
+      having count(*) > 1
+    ) then
+      raise exception 'only one option may be selected per option group';
+    end if;
 
     select coalesce(sum(price_delta), 0), coalesce(string_agg(name, ', ' order by sort_order, name), '')
       into v_option_total, v_option_summary
@@ -217,8 +269,58 @@ exception when others then
 end;
 $$;
 
-revoke all on function public.create_kiosk_order(text, text, jsonb) from public;
-grant execute on function public.create_kiosk_order(text, text, jsonb) to anon, authenticated;
+revoke all on function public.create_kiosk_order(text, text, jsonb, uuid) from public;
+grant execute on function public.create_kiosk_order(text, text, jsonb, uuid) to anon, authenticated;
+
+create or replace function public.advance_kiosk_order(
+  p_order_id uuid,
+  p_next_status text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order public.orders%rowtype;
+begin
+  if not public.is_cafe_staff() then
+    raise exception 'staff access required';
+  end if;
+
+  select * into v_order
+  from public.orders
+  where id = p_order_id
+  for update;
+
+  if not found then
+    raise exception 'order not found';
+  end if;
+
+  if not (
+    (v_order.status = 'received' and p_next_status in ('preparing', 'cancelled')) or
+    (v_order.status = 'preparing' and p_next_status in ('ready', 'cancelled')) or
+    (v_order.status = 'ready' and p_next_status in ('completed', 'cancelled'))
+  ) then
+    raise exception 'invalid order status transition';
+  end if;
+
+  update public.orders
+  set status = p_next_status, updated_at = now()
+  where id = p_order_id
+  returning * into v_order;
+
+  return jsonb_build_object(
+    'id', v_order.id,
+    'order_number', v_order.order_number,
+    'status', v_order.status,
+    'updated_at', v_order.updated_at
+  );
+end;
+$$;
+
+revoke all on function public.advance_kiosk_order(uuid, text) from public;
+grant execute on function public.advance_kiosk_order(uuid, text) to authenticated;
 
 insert into public.categories (id, name, sort_order) values
   ('coffee', '커피', 1), ('noncoffee', '논커피', 2), ('tea', '티', 3), ('dessert', '디저트', 4)

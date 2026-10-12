@@ -19,7 +19,7 @@ Supabase
 └─ Realtime: 운영자 주문판 갱신
 ```
 
-클라이언트가 전송한 가격은 신뢰하지 않습니다. `create_kiosk_order` 함수가 활성 메뉴와 옵션 가격을 데이터베이스에서 다시 조회해 총액을 계산합니다.
+클라이언트가 전송한 가격은 신뢰하지 않습니다. `create_kiosk_order` 함수가 활성 메뉴와 옵션 가격을 데이터베이스에서 다시 조회해 총액을 계산합니다. 각 주문에는 클라이언트가 생성한 `request_id`가 포함되며, 같은 요청이 재전송되면 서버가 기존 주문을 반환해 중복 주문을 방지합니다.
 
 ## 주요 기능
 
@@ -45,7 +45,7 @@ cd snu-ai-agent/kiosk
 python3 -m http.server 8000
 ```
 
-`http://localhost:8000`을 엽니다. 현재 `config.js`는 `DEMO_MODE: true`이므로 Supabase 없이도 주문 흐름과 데모 운영판을 확인할 수 있습니다.
+`http://localhost:8000`을 엽니다. 현재 `config.js`는 Seoul 리전의 `cafe-kiosk` Supabase 프로젝트에 연결되어 있으며 `DEMO_MODE: false`입니다. 오프라인 데모만 확인하려면 로컬에서 일시적으로 `DEMO_MODE: true`로 바꿉니다.
 
 주문 도우미의 검색·의도 분류 테스트는 별도 설치 없이 실행할 수 있습니다.
 

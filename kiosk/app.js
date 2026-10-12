@@ -27,6 +27,7 @@ const state = {
   staffDemo: false,
   staffOrders: [],
   ragMessages: [],
+  pendingOrder: null,
 };
 
 const categoryColors = {
@@ -307,13 +308,25 @@ function demoOrder(paymentMethod) {
 
 async function createOrder(paymentMethod) {
   if (!state.usingRemoteData || !db) return demoOrder(paymentMethod);
+  const signature = JSON.stringify({ orderType: state.orderType, paymentMethod, items: orderPayload() });
+  if (!state.pendingOrder || state.pendingOrder.signature !== signature) {
+    state.pendingOrder = { id: crypto.randomUUID(), signature };
+  }
   const { data, error } = await db.rpc("create_kiosk_order", {
     p_order_type: state.orderType,
     p_payment_method: paymentMethod,
     p_items: orderPayload(),
+    p_request_id: state.pendingOrder.id,
   });
   if (error) throw error;
   return data;
+}
+
+function orderErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (message.includes("menu item is not available")) return "품절되었거나 판매가 종료된 메뉴가 있습니다. 메뉴를 다시 확인해 주세요.";
+  if (message.includes("invalid") || message.includes("must be") || message.includes("required")) return "주문 정보가 올바르지 않습니다. 옵션과 수량을 다시 확인해 주세요.";
+  return "주문을 접수하지 못했습니다. 잠시 후 다시 시도하거나 직원에게 문의해 주세요.";
 }
 
 async function placeOrder(event) {
@@ -331,12 +344,13 @@ async function placeOrder(event) {
   $("#checkoutError").textContent = "";
   try {
     const result = await createOrder(paymentMethod);
+    state.pendingOrder = null;
     $("#orderNumber").textContent = result.order_number || result.pickup_code || "확인";
     $("#checkoutDialog").close();
     $("#successDialog").showModal();
   } catch (error) {
     console.error(error);
-    $("#checkoutError").textContent = "주문을 접수하지 못했습니다. 직원에게 문의해 주세요.";
+    $("#checkoutError").textContent = orderErrorMessage(error);
   } finally {
     button.disabled = false;
     button.textContent = "주문 접수하기";
@@ -434,7 +448,10 @@ async function updateOrderStatus(orderId, nextStatus) {
     renderStaffOrders();
     return;
   }
-  const { error } = await db.from("orders").update({ status: nextStatus, updated_at: new Date().toISOString() }).eq("id", orderId);
+  const { error } = await db.rpc("advance_kiosk_order", {
+    p_order_id: orderId,
+    p_next_status: nextStatus,
+  });
   if (error) toast("주문 상태를 변경하지 못했습니다.");
   else await loadStaffOrders();
 }
