@@ -58,6 +58,14 @@ test("현재 주문 유형을 안내한다", () => {
   assert.match(result.answer, /현재 포장 주문/);
 });
 
+test("영문 메뉴명으로 주문 의도를 인식한다", () => {
+  const englishItems = items.map((item) => item.id === "americano" ? { ...item, name: "Americano", description: "Clean finish" } : item);
+  const result = assistant.respond({ message: "Add two Americanos", items: englishItems, cart: [], orderType: "takeout", language: "en" });
+  assert.equal(result.intent, "order");
+  assert.equal(result.action.itemId, "americano");
+  assert.equal(result.action.quantity, 2);
+});
+
 test("판매 메뉴와 무관한 질문은 범위 밖으로 안내한다", () => {
   const result = assistant.respond({ message: "오늘 날씨 알려줘", items, cart: [] });
   assert.equal(result.intent, "out_of_scope");

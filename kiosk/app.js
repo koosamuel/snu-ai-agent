@@ -7,12 +7,17 @@ const db = USE_REMOTE
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-const won = (value) => `${Number(value || 0).toLocaleString("ko-KR")}원`;
+const savedLanguage = localStorage.getItem("cafe-kiosk-language") === "en" ? "en" : "ko";
+const tr = (ko, en) => state.language === "en" ? en : ko;
+const won = (value) => state.language === "en"
+  ? `₩${Number(value || 0).toLocaleString("en-US")}`
+  : `${Number(value || 0).toLocaleString("ko-KR")}원`;
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
 }[char]));
 
 const state = {
+  language: savedLanguage,
   categories: [],
   items: [],
   options: [],
@@ -28,7 +33,90 @@ const state = {
   staffOrders: [],
   ragMessages: [],
   pendingOrder: null,
+  connectionMessage: "메뉴 준비 중",
+  connectionMode: "",
 };
+
+const categoryEnglish = { all: "All", coffee: "Coffee", noncoffee: "Non-Coffee", tea: "Tea", dessert: "Dessert" };
+const itemEnglish = {
+  americano: ["Americano", "Nutty chocolate aroma with a clean finish"],
+  "cafe-latte": ["Cafe Latte", "A smooth balance of espresso and milk"],
+  "vanilla-latte": ["Vanilla Latte", "Gentle vanilla with rich espresso"],
+  "flat-white": ["Flat White", "Bold ristretto with silky milk foam"],
+  "matcha-latte": ["Matcha Latte", "Rich Jeju matcha with smooth milk"],
+  chocolate: ["Real Chocolate", "A bittersweet dark chocolate drink"],
+  "lemon-ade": ["Lemon Ade", "Fresh lemon with sparkling soda"],
+  "earl-grey": ["Earl Grey Tea", "Black tea with a bright bergamot aroma"],
+  "citron-tea": ["Citron Tea", "Warm tea with sweet citron pieces"],
+  croissant: ["Butter Croissant", "Crisp, flaky and buttery pastry"],
+  financier: ["Salted Financier", "Brown butter balanced with a hint of salt"],
+  cheesecake: ["Basque Cheesecake", "Deep and creamy cheese flavor"],
+};
+const optionEnglish = {
+  "temp-hot": "HOT", "temp-ice": "ICE", "size-regular": "Regular", "size-large": "Large",
+  "extra-shot": "Extra Shot", "extra-decaf": "Decaf", "extra-oat": "Oat Milk",
+  "warm-dessert": "Warmed", "plain-dessert": "As Is",
+};
+const groupEnglish = { "온도": "Temperature", "크기": "Size", "추가": "Extras", "데우기": "Heating" };
+const itemName = (item) => state.language === "en" ? itemEnglish[item.id]?.[0] || item.name : item.name;
+const itemDescription = (item) => state.language === "en" ? itemEnglish[item.id]?.[1] || item.description : item.description;
+const optionName = (option) => state.language === "en" ? optionEnglish[option.id] || option.name : option.name;
+const optionGroupName = (name) => state.language === "en" ? groupEnglish[name] || name : name;
+
+const staticTranslations = [
+  [".brand strong", "카페 키오스크 - 1조", "Cafe Kiosk - Team 1"],
+  ["#orderTab", "주문", "Order"], ["#feedbackTab", "피드백", "Feedback"],
+  ["[data-order-type='takeout']", "포장", "Takeout"], ["[data-order-type='dine_in']", "매장", "Dine In"],
+  ["#staffButton", "운영자", "Staff"], ["#ragTitle", "AI 주문 도우미", "AI Order Assistant"],
+  ["#ragResetButton", "대화·장바구니 초기화", "Reset Chat & Cart"],
+  ["[data-rag-prompt]:nth-child(1)", "식사 페어링", "Food Pairing"], ["[data-rag-prompt]:nth-child(2)", "메뉴 비교", "Compare"],
+  ["[data-rag-prompt]:nth-child(3)", "옵션 주문", "Custom Order"], ["[data-rag-prompt]:nth-child(4)", "장바구니 확인", "View Cart"],
+  ["#ragSendButton", "보내기", "Send"], [".rag-notice", "검색·대화 로직은 브라우저에서 실행되며, 최종 가격과 주문은 Supabase가 다시 검증합니다.", "Search and chat run in your browser. Supabase verifies final prices and orders."],
+  ["#cartTitle", "주문 내역", "My Order"], [".cart-summary > div:nth-child(1) span", "상품 금액", "Subtotal"],
+  [".cart-summary > div:nth-child(2) span", "할인", "Discount"], [".cart-total span", "결제 예정 금액", "Total"],
+  [".cart-summary > div:nth-child(2) strong", "0원", "₩0"],
+  [".payment-note", "※ 실제 카드 승인 기능은 결제 단말 연동 후 사용할 수 있습니다.", "※ Card authorization requires a connected payment terminal."],
+  ["#feedbackPanel h1", "이용 경험을 알려 주세요", "Tell Us About Your Experience"],
+  [".feedback-intro", "남겨 주신 의견은 더 편리한 주문 경험을 만드는 데 활용됩니다.", "Your feedback helps us create a better ordering experience."],
+  [".rating-fieldset legend", "이번 이용은 어떠셨나요?", "How was your experience?"],
+  [".rating-options label:nth-child(1) small", "매우 아쉬움", "Very Poor"], [".rating-options label:nth-child(2) small", "아쉬움", "Poor"],
+  [".rating-options label:nth-child(3) small", "보통", "Okay"], [".rating-options label:nth-child(4) small", "만족", "Good"],
+  [".rating-options label:nth-child(5) small", "매우 만족", "Excellent"],
+  [".feedback-tags legend", "좋았거나 개선이 필요한 부분을 선택해 주세요", "What worked well or needs improvement?"],
+  [".feedback-tags label:nth-child(1) span", "메뉴 찾기", "Finding Menu"], [".feedback-tags label:nth-child(2) span", "AI 도우미", "AI Assistant"],
+  [".feedback-tags label:nth-child(3) span", "옵션 선택", "Options"], [".feedback-tags label:nth-child(4) span", "장바구니", "Cart"],
+  [".feedback-tags label:nth-child(5) span", "화면 구성", "Layout"],
+  [".feedback-comment > span", "추가 의견 (선택)", "Additional comments (optional)"],
+  ["#feedbackSubmitButton", "피드백 보내기", "Send Feedback"],
+  ["#optionForm .quantity-row > span", "수량", "Quantity"],
+  ["#checkoutDialog h2", "주문 내용을 확인해 주세요", "Review Your Order"],
+  [".payment-methods legend", "결제 방법", "Payment Method"],
+  [".payment-methods label:nth-of-type(1) strong", "카드 결제", "Card"], [".payment-methods label:nth-of-type(1) small", "단말기에서 결제", "Pay at terminal"],
+  [".payment-methods label:nth-of-type(2) strong", "카운터 결제", "Pay at Counter"], [".payment-methods label:nth-of-type(2) small", "직원에게 직접 결제", "Pay a staff member"],
+  [".consent-row span", "메뉴와 주문 유형을 확인했습니다.", "I reviewed the items and order type."],
+  ["#placeOrderButton", "주문 접수하기", "Place Order"], ["#successDialog h2", "주문이 접수되었습니다", "Order Received"],
+  ["#successDialog > p:not(.eyebrow)", "준비가 완료되면 주문번호를 불러드릴게요.", "We will call your number when the order is ready."],
+  [".order-number span", "주문번호", "Order Number"], ["#newOrderButton", "새 주문 시작", "Start New Order"],
+];
+
+function applyLanguage() {
+  document.documentElement.lang = state.language;
+  document.title = tr("카페 키오스크 - 1조", "Cafe Kiosk - Team 1");
+  $("#languageButton").textContent = state.language === "ko" ? "한 / EN" : "EN / 한";
+  $("#languageButton").setAttribute("aria-label", tr("영어로 변경", "Switch to Korean"));
+  staticTranslations.forEach(([selector, ko, en]) => {
+    const element = $(selector);
+    if (element) element.textContent = state.language === "en" ? en : ko;
+  });
+  $("#ragInput").placeholder = tr("예: 아메리카노 두 잔 담아 줘", "e.g. Add two Americanos");
+  $("#searchInput").placeholder = tr("메뉴 검색", "Search menu");
+  $("#feedbackComment").placeholder = tr("불편했던 점이나 좋았던 점을 자유롭게 작성해 주세요.", "Tell us what you liked or what could be improved.");
+  setConnection(state.connectionMessage, state.connectionMode);
+  renderCategories();
+  renderMenu();
+  renderCart();
+  if (state.activeItem && $("#optionDialog").open) openOptions(state.activeItem.id);
+}
 
 const categoryColors = {
   coffee: "#6d4634",
@@ -38,8 +126,14 @@ const categoryColors = {
 };
 
 function setConnection(message, mode = "") {
+  state.connectionMessage = message;
+  state.connectionMode = mode;
   const element = $("#connectionStatus");
-  element.textContent = message;
+  const english = {
+    "메뉴 준비 중": "Loading menu", "실시간 메뉴": "Live menu", "데모 메뉴": "Demo menu",
+    "오프라인 메뉴": "Offline menu", "메뉴 오류": "Menu error",
+  };
+  element.textContent = state.language === "en" ? english[message] || message : message;
   element.className = `connection-status ${mode}`.trim();
 }
 
@@ -72,12 +166,12 @@ async function submitFeedback(event) {
   const status = $("#feedbackStatus");
   const button = $("#feedbackSubmitButton");
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    status.textContent = "만족도를 선택해 주세요.";
+    status.textContent = tr("만족도를 선택해 주세요.", "Please select a rating.");
     return;
   }
 
   button.disabled = true;
-  button.textContent = "보내는 중…";
+  button.textContent = tr("보내는 중…", "Sending…");
   status.textContent = "";
   const feedback = {
     rating,
@@ -96,13 +190,13 @@ async function submitFeedback(event) {
       localStorage.setItem("cafe-kiosk-feedback", JSON.stringify(saved.slice(-30)));
     }
     form.reset();
-    status.textContent = "소중한 의견을 보내 주셔서 감사합니다.";
+    status.textContent = tr("소중한 의견을 보내 주셔서 감사합니다.", "Thank you for your feedback.");
   } catch (error) {
     console.error(error);
-    status.textContent = "피드백을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    status.textContent = tr("피드백을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", "We could not save your feedback. Please try again.");
   } finally {
     button.disabled = false;
-    button.textContent = "피드백 보내기";
+    button.textContent = tr("피드백 보내기", "Send Feedback");
   }
 }
 
@@ -151,30 +245,30 @@ async function loadMenu() {
 function renderCategories() {
   $("#categoryTabs").innerHTML = state.categories.map((category) => `
     <button class="category-button ${category.id === state.category ? "active" : ""}"
-      type="button" data-category="${escapeHtml(category.id)}">${escapeHtml(category.name)}</button>
+      type="button" data-category="${escapeHtml(category.id)}">${escapeHtml(state.language === "en" ? categoryEnglish[category.id] || category.name : category.name)}</button>
   `).join("");
 }
 
 function renderMenu() {
-  const normalizedSearch = state.search.toLocaleLowerCase("ko-KR");
+  const normalizedSearch = state.search.toLocaleLowerCase(state.language === "en" ? "en-US" : "ko-KR");
   const visible = state.items.filter((item) => {
     const categoryMatch = state.category === "all" || item.category_id === state.category;
-    const searchMatch = !normalizedSearch || `${item.name} ${item.description}`.toLocaleLowerCase("ko-KR").includes(normalizedSearch);
+    const searchMatch = !normalizedSearch || `${item.name} ${item.description} ${itemEnglish[item.id]?.join(" ") || ""}`.toLocaleLowerCase().includes(normalizedSearch);
     return item.available !== false && categoryMatch && searchMatch;
   });
 
   const selectedCategory = state.categories.find((category) => category.id === state.category);
-  $("#categoryTitle").textContent = selectedCategory?.name === "전체" ? "전체 메뉴" : selectedCategory?.name || "메뉴";
+  $("#categoryTitle").textContent = selectedCategory?.id === "all" ? tr("전체 메뉴", "All Menu") : selectedCategory ? (state.language === "en" ? categoryEnglish[selectedCategory.id] || selectedCategory.name : selectedCategory.name) : tr("메뉴", "Menu");
   $("#menuGrid").innerHTML = visible.length ? visible.map((item) => `
     <button class="menu-card" type="button" data-menu-id="${escapeHtml(item.id)}" style="--accent:${categoryColors[item.category_id] || "#2f4a3b"}">
-      ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : `<span class="badge" aria-hidden="true">MENU</span>`}
+      ${item.badge ? `<span class="badge">${escapeHtml(state.language === "en" && item.badge === "추천" ? "Recommended" : item.badge)}</span>` : `<span class="badge" aria-hidden="true">MENU</span>`}
       <span class="category-dot" style="background:var(--accent)"></span>
-      <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.description)}</p>
+      <h3>${escapeHtml(itemName(item))}</h3>
+      <p>${escapeHtml(itemDescription(item))}</p>
       <strong>${won(item.price)}</strong>
       <span class="add-symbol" aria-hidden="true">＋</span>
     </button>
-  `).join("") : `<div class="menu-empty"><strong>검색 결과가 없습니다.</strong><br />다른 메뉴 이름을 입력해 보세요.</div>`;
+  `).join("") : `<div class="menu-empty"><strong>${tr("검색 결과가 없습니다.", "No results found.")}</strong><br />${tr("다른 메뉴 이름을 입력해 보세요.", "Try another menu name.")}</div>`;
 }
 
 function isDrink(item) {
@@ -208,8 +302,8 @@ function openOptions(itemId) {
   if (!item) return;
   state.activeItem = item;
   state.optionQuantity = 1;
-  $("#optionItemName").textContent = item.name;
-  $("#optionItemDescription").textContent = item.description;
+  $("#optionItemName").textContent = itemName(item);
+  $("#optionItemDescription").textContent = itemDescription(item);
   $("#optionQuantity").textContent = "1";
 
   const groups = groupOptions(item);
@@ -217,14 +311,14 @@ function openOptions(itemId) {
     const isMultiple = groupName === "추가";
     return `
       <fieldset class="option-group" data-option-group="${escapeHtml(groupName)}">
-        <legend>${escapeHtml(groupName)}${isMultiple ? " (선택)" : ""}</legend>
+        <legend>${escapeHtml(optionGroupName(groupName))}${isMultiple ? tr(" (선택)", " (optional)") : ""}</legend>
         <div class="option-choice-grid">
           ${options.map((option, index) => `
             <label class="option-choice">
               <input type="${isMultiple ? "checkbox" : "radio"}" name="option-${escapeHtml(groupName)}"
                 value="${escapeHtml(option.id)}" ${!isMultiple && index === 0 ? "checked" : ""} />
-              <span>${escapeHtml(option.name)}</span>
-              <small>${option.price_delta ? `+${won(option.price_delta)}` : "추가금 없음"}</small>
+              <span>${escapeHtml(optionName(option))}</span>
+              <small>${option.price_delta ? `+${won(option.price_delta)}` : tr("추가금 없음", "No extra charge")}</small>
             </label>
           `).join("")}
         </div>
@@ -244,7 +338,7 @@ function selectedUnitPrice() {
 }
 
 function updateAddButtonPrice() {
-  $("#addToCartButton").textContent = `${won(selectedUnitPrice() * state.optionQuantity)} · 장바구니에 담기`;
+  $("#addToCartButton").textContent = `${won(selectedUnitPrice() * state.optionQuantity)} · ${tr("장바구니에 담기", "Add to Cart")}`;
 }
 
 function cartKey(itemId, options) {
@@ -256,7 +350,7 @@ function addActiveItemToCart() {
   const options = selectedDialogOptions();
   addItemToCart(state.activeItem, options, state.optionQuantity);
   $("#optionDialog").close();
-  toast(`${state.activeItem.name}을(를) 담았습니다.`);
+  toast(tr(`${state.activeItem.name}을(를) 담았습니다.`, `${itemName(state.activeItem)} added to cart.`));
 }
 
 function addItemToCart(item, options, quantity = 1) {
@@ -287,11 +381,11 @@ function renderCart() {
   const count = state.cart.reduce((sum, entry) => sum + entry.quantity, 0);
   const total = cartTotal();
   $("#cartCount").textContent = count;
-  $(".cart-heading").dataset.mobileLabel = count ? `${count}개 메뉴` : "장바구니가 비었어요";
+  $(".cart-heading").dataset.mobileLabel = count ? tr(`${count}개 메뉴`, `${count} item${count === 1 ? "" : "s"}`) : tr("장바구니가 비었어요", "Cart is empty");
   $("#cartItems").innerHTML = state.cart.length ? state.cart.map((entry) => `
     <article class="cart-item">
       <div class="cart-item-head">
-        <div><h3>${escapeHtml(entry.item.name)}</h3><p>${escapeHtml(entry.options.map((option) => option.name).join(" · ") || "기본")}</p></div>
+        <div><h3>${escapeHtml(itemName(entry.item))}</h3><p>${escapeHtml(entry.options.map(optionName).join(" · ") || tr("기본", "Default"))}</p></div>
         <strong>${won(entry.unitPrice * entry.quantity)}</strong>
       </div>
       <div class="cart-item-actions">
@@ -300,14 +394,14 @@ function renderCart() {
           <output>${entry.quantity}</output>
           <button type="button" data-cart-action="increase" data-cart-key="${escapeHtml(entry.key)}" aria-label="${escapeHtml(entry.item.name)} 수량 늘리기">＋</button>
         </div>
-        <button class="remove-button" type="button" data-cart-action="remove" data-cart-key="${escapeHtml(entry.key)}">삭제</button>
+        <button class="remove-button" type="button" data-cart-action="remove" data-cart-key="${escapeHtml(entry.key)}">${tr("삭제", "Remove")}</button>
       </div>
     </article>
-  `).join("") : `<div class="cart-empty"><div><span aria-hidden="true">☕</span><strong>아직 담은 메뉴가 없어요</strong><br /><small>왼쪽 메뉴를 눌러 시작해 보세요.</small></div></div>`;
+  `).join("") : `<div class="cart-empty"><div><span aria-hidden="true">☕</span><strong>${tr("아직 담은 메뉴가 없어요", "Your cart is empty")}</strong><br /><small>${tr("왼쪽 메뉴를 눌러 시작해 보세요.", "Select a menu item to get started.")}</small></div></div>`;
   $("#subtotal").textContent = won(total);
   $("#total").textContent = won(total);
   $("#checkoutTotal").textContent = won(total);
-  $("#checkoutLabel").textContent = count ? `${count}개 주문하기` : "메뉴를 담아 주세요";
+  $("#checkoutLabel").textContent = count ? tr(`${count}개 주문하기`, `Order ${count} item${count === 1 ? "" : "s"}`) : tr("메뉴를 담아 주세요", "Add items to cart");
   $("#checkoutButton").disabled = !count;
 }
 
@@ -322,11 +416,11 @@ function updateCartItem(key, action) {
 
 function openCheckout() {
   if (!state.cart.length) return;
-  const orderTypeLabel = state.orderType === "takeout" ? "포장" : "매장 이용";
+  const orderTypeLabel = state.orderType === "takeout" ? tr("포장", "Takeout") : tr("매장 이용", "Dine In");
   $("#checkoutSummary").innerHTML = `
-    <div><span>주문 유형</span><strong>${orderTypeLabel}</strong></div>
-    <div><span>메뉴 수량</span><strong>${state.cart.reduce((sum, entry) => sum + entry.quantity, 0)}개</strong></div>
-    <div class="grand-total"><span>결제 예정 금액</span><strong>${won(cartTotal())}</strong></div>`;
+    <div><span>${tr("주문 유형", "Order Type")}</span><strong>${orderTypeLabel}</strong></div>
+    <div><span>${tr("메뉴 수량", "Items")}</span><strong>${state.cart.reduce((sum, entry) => sum + entry.quantity, 0)}${tr("개", "")}</strong></div>
+    <div class="grand-total"><span>${tr("결제 예정 금액", "Total")}</span><strong>${won(cartTotal())}</strong></div>`;
   $("#orderConsent").checked = false;
   $("#checkoutError").textContent = "";
   $("#checkoutDialog").showModal();
@@ -389,13 +483,13 @@ async function placeOrder(event) {
   if (!state.cart.length) return;
   const consent = $("#orderConsent");
   if (event && !consent.checked) {
-    $("#checkoutError").textContent = "주문 내용을 확인한 뒤 확인란을 선택해 주세요.";
+    $("#checkoutError").textContent = tr("주문 내용을 확인한 뒤 확인란을 선택해 주세요.", "Review the order and select the confirmation box.");
     return;
   }
   const button = $("#placeOrderButton");
   const paymentMethod = $("input[name='paymentMethod']:checked")?.value || "card";
   button.disabled = true;
-  button.textContent = "주문을 접수하는 중…";
+  button.textContent = tr("주문을 접수하는 중…", "Placing order…");
   $("#checkoutError").textContent = "";
   try {
     const result = await createOrder(paymentMethod);
@@ -408,7 +502,7 @@ async function placeOrder(event) {
     $("#checkoutError").textContent = orderErrorMessage(error);
   } finally {
     button.disabled = false;
-    button.textContent = "주문 접수하기";
+    button.textContent = tr("주문 접수하기", "Place Order");
   }
 }
 
@@ -527,11 +621,11 @@ function appendRagMessage(role, text, retrieved = []) {
   const article = document.createElement("article");
   article.className = `rag-message ${role}`;
   article.innerHTML = `
-    <span class="rag-message-label">${role === "user" ? "나" : "주문 도우미"}</span>
+    <span class="rag-message-label">${role === "user" ? tr("나", "You") : tr("주문 도우미", "Order Assistant")}</span>
     <p>${escapeHtml(text)}</p>
     ${retrieved.length ? `<div class="rag-sources" aria-label="검색된 메뉴">${retrieved.map((item) => `
       <button type="button" data-rag-menu-id="${escapeHtml(item.id)}">
-        <span>${escapeHtml(item.name)}</span><strong>${won(item.price)}</strong>
+        <span>${escapeHtml(itemName(item))}</span><strong>${won(item.price)}</strong>
       </button>`).join("")}</div>` : ""}`;
   const messages = $("#ragMessages");
   let turn;
@@ -618,6 +712,31 @@ function applyRagAction(result) {
   return result.answer;
 }
 
+function englishAssistantAnswer(result) {
+  const orderType = state.orderType === "dine_in" ? "Dine In" : "Takeout";
+  const items = result.retrieved || [];
+  if (result.intent === "order_type") return `Your current order type is ${orderType}. You can change it with the buttons at the top.`;
+  if (result.intent === "clear") return "Your cart has been cleared.";
+  if (result.intent === "cart") {
+    const count = state.cart.reduce((sum, entry) => sum + entry.quantity, 0);
+    return count ? `${orderType} order: ${count} item${count === 1 ? "" : "s"}, totaling ${won(cartTotal())}.` : `Your ${orderType.toLowerCase()} cart is empty.`;
+  }
+  if (result.intent === "order" && result.action) {
+    const item = state.items.find((candidate) => candidate.id === result.action.itemId);
+    return `${result.action.quantity || 1} ${item ? itemName(item) : "item"}${Number(result.action.quantity || 1) === 1 ? "" : "s"} added to your ${orderType.toLowerCase()} order.`;
+  }
+  if (result.intent === "remove" && result.action) {
+    const item = state.items.find((candidate) => candidate.id === result.action.itemId);
+    return `${item ? itemName(item) : "Item"} removed from your cart.`;
+  }
+  if (result.intent === "compare" && items.length >= 2) return `${itemName(items[0])}: ${itemDescription(items[0])}. ${itemName(items[1])}: ${itemDescription(items[1])}.`;
+  if (result.intent === "price" && items[0]) return `${itemName(items[0])} starts at ${won(items[0].price)}.`;
+  if (result.intent === "recommend" && items.length) return `I recommend ${items.slice(0, 3).map(itemName).join(", ")}. Select an item below to view its options.`;
+  if (result.intent === "inform" && items[0]) return `${itemName(items[0])} is ${won(items[0].price)}. ${itemDescription(items[0])}.`;
+  if (result.intent === "clarify") return "Please include the menu name or tell me what flavor, caffeine level, or price you prefer.";
+  return "I can help with menu recommendations, prices, comparisons, and cart requests.";
+}
+
 function sendRagMessage(message) {
   const assistant = window.CafeRagAssistant;
   const history = state.ragMessages.map((entry) => ({ role: entry.role, text: entry.text }));
@@ -631,8 +750,11 @@ function sendRagMessage(message) {
     return;
   }
 
-  const result = assistant.respond({ message, items: state.items, options: state.options, cart: state.cart, history, orderType: state.orderType });
-  const answer = applyRagAction(result);
+  const localizedItems = state.items.map((item) => ({ ...item, name: itemName(item), description: itemDescription(item) }));
+  const localizedOptions = state.options.map((option) => ({ ...option, name: optionName(option), group_name: optionGroupName(option.group_name) }));
+  const result = assistant.respond({ message, items: localizedItems, options: localizedOptions, cart: state.cart, history, orderType: state.orderType, language: state.language });
+  const appliedAnswer = applyRagAction(result);
+  const answer = state.language === "en" ? englishAssistantAnswer(result) : appliedAnswer;
   appendRagMessage("assistant", answer, result.retrieved || []);
 }
 
@@ -641,8 +763,8 @@ function resetRagSession() {
   state.cart = [];
   $("#ragMessages").innerHTML = "";
   renderCart();
-  appendRagMessage("assistant", "새 주문을 시작했습니다. 메뉴 정보, 추천, 비교 또는 옵션 주문을 말씀해 주세요.");
-  toast("대화와 장바구니를 초기화했습니다.");
+  appendRagMessage("assistant", tr("새 주문을 시작했습니다. 메뉴 정보, 추천, 비교 또는 옵션 주문을 말씀해 주세요.", "A new order has started. Ask about menu items, recommendations, comparisons, or custom orders."));
+  toast(tr("대화와 장바구니를 초기화했습니다.", "Chat and cart were reset."));
 }
 
 function submitRagMessage(event) {
@@ -736,8 +858,8 @@ $("#searchInput").addEventListener("input", (event) => { state.search = event.ta
 $$(`[data-order-type]`).forEach((button) => button.addEventListener("click", () => {
   state.orderType = button.dataset.orderType;
   $$(`[data-order-type]`).forEach((candidate) => candidate.classList.toggle("active", candidate === button));
-  const label = state.orderType === "dine_in" ? "매장" : "포장";
-  appendRagMessage("assistant", `${label} 주문으로 진행합니다. 이후 메뉴 추천과 장바구니 안내에 이 선택을 반영할게요.`);
+  const label = state.orderType === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout");
+  appendRagMessage("assistant", tr(`${label} 주문으로 진행합니다. 이후 메뉴 추천과 장바구니 안내에 이 선택을 반영할게요.`, `${label} selected. I will use it for recommendations and cart guidance.`));
 }));
 
 $("#optionGroups").addEventListener("change", updateAddButtonPrice);
@@ -781,7 +903,14 @@ $("#staffOrders").addEventListener("click", (event) => {
   const button = event.target.closest("[data-order-id]");
   if (button) updateOrderStatus(button.dataset.orderId, button.dataset.nextStatus);
 });
-$("#languageButton").addEventListener("click", () => toast("영문 화면은 다음 버전에서 지원할 예정입니다."));
+$("#languageButton").addEventListener("click", () => {
+  state.language = state.language === "ko" ? "en" : "ko";
+  localStorage.setItem("cafe-kiosk-language", state.language);
+  state.ragMessages = [];
+  $("#ragMessages").innerHTML = "";
+  applyLanguage();
+  appendRagMessage("assistant", tr("한국어 화면으로 전환했습니다.", "The interface is now in English."));
+});
 $$(`[data-close]`).forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
 $$(`dialog`).forEach((dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog && dialog.id !== "successDialog") dialog.close(); }));
 
@@ -794,9 +923,10 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=15").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=16").catch(console.error));
 
 renderCart();
+applyLanguage();
 $("#demoStaffButton").hidden = USE_REMOTE;
 loadMenu().then(registerWebMcpTools).catch((error) => {
   console.error(error);

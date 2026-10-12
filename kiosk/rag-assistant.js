@@ -6,18 +6,18 @@
   "use strict";
 
   const KNOWLEDGE = {
-    americano: { aliases: ["아아"], caffeine: "높음", tags: ["진한", "깔끔한", "저당", "쌉쌀한"] },
-    "cafe-latte": { aliases: ["카페라떼", "라떼", "카페라테"], caffeine: "중간", tags: ["부드러운", "고소한", "우유"] },
-    "vanilla-latte": { aliases: ["바닐라라떼", "바닐라라테"], caffeine: "중간", tags: ["달콤한", "부드러운", "우유"] },
-    "flat-white": { aliases: ["플랫화이트"], caffeine: "높음", tags: ["진한", "고소한", "우유"] },
-    "matcha-latte": { aliases: ["말차라떼", "말차라테"], caffeine: "낮음", tags: ["달콤한", "쌉싸름한", "논커피"] },
-    chocolate: { aliases: ["초코", "초코라떼", "초콜릿라떼"], caffeine: "매우 낮음", tags: ["달콤한", "초콜릿", "논커피"] },
-    "lemon-ade": { aliases: ["레몬에이드"], caffeine: "없음", tags: ["상큼한", "청량한", "무카페인", "차가운"] },
-    "earl-grey": { aliases: ["얼그레이", "홍차"], caffeine: "낮음", tags: ["향긋한", "깔끔한", "티"] },
-    "citron-tea": { aliases: ["유자티", "유자 차"], caffeine: "없음", tags: ["상큼한", "달콤한", "무카페인", "따뜻한"] },
-    croissant: { aliases: ["크로아상", "플레인 크루아상"], caffeine: "없음", tags: ["고소한", "바삭한", "빵", "디저트"] },
-    financier: { aliases: ["휘낭시에"], caffeine: "없음", tags: ["고소한", "달콤한", "버터", "디저트"] },
-    cheesecake: { aliases: ["치즈 케이크", "바스크치즈케이크"], caffeine: "없음", tags: ["고소한", "크리미한", "케이크", "디저트"] },
+    americano: { aliases: ["아아", "americano"], caffeine: "높음", tags: ["진한", "깔끔한", "저당", "쌉쌀한", "strong", "clean"] },
+    "cafe-latte": { aliases: ["카페라떼", "라떼", "카페라테", "cafe latte", "latte"], caffeine: "중간", tags: ["부드러운", "고소한", "우유", "smooth", "milk"] },
+    "vanilla-latte": { aliases: ["바닐라라떼", "바닐라라테", "vanilla latte"], caffeine: "중간", tags: ["달콤한", "부드러운", "우유", "sweet"] },
+    "flat-white": { aliases: ["플랫화이트", "flat white"], caffeine: "높음", tags: ["진한", "고소한", "우유", "strong"] },
+    "matcha-latte": { aliases: ["말차라떼", "말차라테", "matcha latte"], caffeine: "낮음", tags: ["달콤한", "쌉싸름한", "논커피", "matcha"] },
+    chocolate: { aliases: ["초코", "초코라떼", "초콜릿라떼", "chocolate", "hot chocolate"], caffeine: "매우 낮음", tags: ["달콤한", "초콜릿", "논커피", "sweet"] },
+    "lemon-ade": { aliases: ["레몬에이드", "lemon ade", "lemonade"], caffeine: "없음", tags: ["상큼한", "청량한", "무카페인", "차가운", "refreshing", "caffeine free"] },
+    "earl-grey": { aliases: ["얼그레이", "홍차", "earl grey", "black tea"], caffeine: "낮음", tags: ["향긋한", "깔끔한", "티"] },
+    "citron-tea": { aliases: ["유자티", "유자 차", "citron tea", "yuzu tea"], caffeine: "없음", tags: ["상큼한", "달콤한", "무카페인", "따뜻한", "caffeine free"] },
+    croissant: { aliases: ["크로아상", "플레인 크루아상", "croissant"], caffeine: "없음", tags: ["고소한", "바삭한", "빵", "디저트"] },
+    financier: { aliases: ["휘낭시에", "financier"], caffeine: "없음", tags: ["고소한", "달콤한", "버터", "디저트"] },
+    cheesecake: { aliases: ["치즈 케이크", "바스크치즈케이크", "cheesecake", "basque cheesecake"], caffeine: "없음", tags: ["고소한", "크리미한", "케이크", "디저트"] },
   };
 
   const CATEGORY_LABELS = {
@@ -168,7 +168,10 @@
     if (match) return Math.min(20, Math.max(1, Number(match[1])));
     const words = { 한: 1, 하나: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 네: 4, 넷: 4 };
     const wordMatch = normalize(message).match(/(한|하나|두|둘|세|셋|네|넷)\s*(잔|개|조각|병)/u);
-    return wordMatch ? words[wordMatch[1]] : 1;
+    if (wordMatch) return words[wordMatch[1]];
+    const englishWords = { one: 1, two: 2, three: 3, four: 4 };
+    const englishMatch = normalize(message).match(/\b(one|two|three|four)\b/u);
+    return englishMatch ? englishWords[englishMatch[1]] : 1;
   }
 
   function conversationQuery(message, history = []) {
@@ -184,11 +187,11 @@
       [/핫|따뜻|뜨겁/u, (option) => normalize(option.name) === "hot"],
       [/(?:^|\s)l(?:\s|$)|라지|large/u, (option) => normalize(option.name) === "large"],
       [/(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular/u, (option) => normalize(option.name) === "regular"],
-      [/샷\s*추가|샷/u, (option) => normalize(option.name).includes("샷 추가")],
-      [/디카페인/u, (option) => normalize(option.name).includes("디카페인")],
-      [/오트\s*밀크|오트밀크/u, (option) => normalize(option.name).includes("오트 밀크")],
-      [/데워|따뜻하게/u, (option) => normalize(option.name).includes("따뜻하게")],
-      [/그대로/u, (option) => normalize(option.name) === "그대로"],
+      [/샷\s*추가|샷|extra shot/u, (option) => /샷 추가|extra shot/u.test(normalize(option.name))],
+      [/디카페인|decaf/u, (option) => /디카페인|decaf/u.test(normalize(option.name))],
+      [/오트\s*밀크|오트밀크|oat milk/u, (option) => /오트 밀크|oat milk/u.test(normalize(option.name))],
+      [/데워|따뜻하게|warmed|warm it/u, (option) => /따뜻하게|warmed/u.test(normalize(option.name))],
+      [/그대로|as is/u, (option) => /그대로|as is/u.test(normalize(option.name))],
     ];
     return [...new Set(requests.flatMap(([pattern, matches]) => pattern.test(text)
       ? options.filter(matches).map((option) => option.id)
@@ -235,13 +238,13 @@
 
   function inferIntent(message) {
     const query = normalize(message);
-    if (/(전체|전부|장바구니).*?(비워|취소|삭제)|주문\s*초기화/u.test(query)) return "clear";
-    if (/빼|제거|삭제|취소/u.test(query)) return "remove";
-    if (/장바구니|담긴|합계|총액/u.test(query)) return "cart";
-    if (/비교|차이|뭐가 더/u.test(query)) return "compare";
-    if (/주문|담아|추가해|주세요|살래/u.test(query)) return "order";
-    if (/추천|골라|어울|뭐가 좋|어떤 게/u.test(query)) return "recommend";
-    if (/가격|얼마/u.test(query)) return "price";
+    if (/(전체|전부|장바구니).*?(비워|취소|삭제)|주문\s*초기화|clear (?:the )?cart|cancel (?:the )?order/u.test(query)) return "clear";
+    if (/빼|제거|삭제|취소|remove|delete/u.test(query)) return "remove";
+    if (/장바구니|담긴|합계|총액|cart|basket|total/u.test(query)) return "cart";
+    if (/비교|차이|뭐가 더|compare|difference/u.test(query)) return "compare";
+    if (/주문|담아|추가해|주세요|살래|\badd\b|order|i(?:'d| would) like|give me/u.test(query)) return "order";
+    if (/추천|골라|어울|뭐가 좋|어떤 게|recommend|suggest|pair/u.test(query)) return "recommend";
+    if (/가격|얼마|price|how much/u.test(query)) return "price";
     return "inform";
   }
 
@@ -263,7 +266,7 @@
     };
   }
 
-  function respond({ message, items = [], options = [], cart = [], history = [], orderType = "takeout" }) {
+  function respond({ message, items = [], options = [], cart = [], history = [], orderType = "takeout", language = "ko" }) {
     const contextualMessage = conversationQuery(message, history);
     const text = normalize(contextualMessage);
     const intent = inferIntent(text);
@@ -271,7 +274,7 @@
     const retrieved = retrieveMenu(items, text, intent === "compare" ? 6 : 4);
     const itemRows = retrieved.map((row) => row.item);
 
-    if (/(주문\s*유형|포장.*매장|매장.*포장|어디서\s*먹|어떻게\s*받)/u.test(text)) {
+    if (/(주문\s*유형|포장.*매장|매장.*포장|어디서\s*먹|어떻게\s*받|order type|takeout.*dine|dine.*takeout)/u.test(text)) {
       return { intent: "order_type", answer: `현재 ${orderTypeLabel} 주문으로 선택되어 있습니다. 상단의 포장·매장 버튼에서 변경할 수 있어요.`, retrieved: [] };
     }
 
