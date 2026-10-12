@@ -486,8 +486,8 @@ function openRagAssistant() {
   if (!state.ragMessages.length) {
     appendRagMessage("assistant", "원하는 맛, 카페인 정도, 가격을 말씀해 주세요. 메뉴 비교와 기본 옵션 장바구니 담기도 도와드릴게요.");
   }
-  $("#ragDialog").showModal();
-  window.setTimeout(() => $("#ragInput").focus(), 0);
+  $("#ragDialog").scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => $("#ragInput").focus(), 350);
 }
 
 function removeMenuFromCart(itemId, quantity) {
@@ -718,7 +718,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=5").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=6").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;
