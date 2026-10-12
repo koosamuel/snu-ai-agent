@@ -313,6 +313,7 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .rag-prompts button { flex: 0 0 auto; min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--sage); background: var(--paper); font-size: 13px; font-weight: 750; cursor: pointer; }
 .rag-prompts button:hover { border-color: var(--sage); background: var(--sage-soft); }
 .rag-messages { display: flex; min-height: 280px; padding: 22px; overflow-y: auto; flex-direction: column; gap: 14px; background: var(--paper-2); }
+.rag-turn { display: flex; flex: 0 0 auto; flex-direction: column; gap: 10px; }
 .rag-message { width: fit-content; max-width: 82%; padding: 13px 15px; border: 1px solid var(--line); border-radius: 4px 17px 17px; background: var(--paper); box-shadow: 0 5px 15px rgba(47,34,24,.06); }
 .rag-message.user { align-self: flex-end; border-color: var(--sage); border-radius: 17px 4px 17px 17px; color: white; background: var(--sage); }
 .rag-message-label { display: block; margin-bottom: 5px; color: var(--terracotta); font-size: 11px; font-weight: 850; letter-spacing: .06em; }

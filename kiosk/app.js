@@ -478,8 +478,26 @@ function appendRagMessage(role, text, retrieved = []) {
       <button type="button" data-rag-menu-id="${escapeHtml(item.id)}">
         <span>${escapeHtml(item.name)}</span><strong>${won(item.price)}</strong>
       </button>`).join("")}</div>` : ""}`;
-  $("#ragMessages").prepend(article);
-  $("#ragMessages").scrollTop = 0;
+  const messages = $("#ragMessages");
+  let turn;
+  if (role === "user") {
+    turn = document.createElement("section");
+    turn.className = "rag-turn";
+    turn.setAttribute("aria-label", "질문과 답변");
+    turn.append(article);
+    messages.prepend(turn);
+  } else {
+    turn = messages.querySelector(".rag-turn.pending");
+    if (!turn) {
+      turn = document.createElement("section");
+      turn.className = "rag-turn";
+      messages.prepend(turn);
+    }
+    turn.append(article);
+    turn.classList.remove("pending");
+  }
+  if (role === "user") turn.classList.add("pending");
+  messages.scrollTop = 0;
 }
 
 function openRagAssistant() {
@@ -718,7 +736,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=9").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=10").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;
