@@ -948,7 +948,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=22").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23").catch(console.error));
 
 renderCart();
 applyLanguage();
