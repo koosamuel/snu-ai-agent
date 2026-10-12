@@ -35,6 +35,7 @@ const state = {
   pendingOrder: null,
   connectionMessage: "메뉴 준비 중",
   connectionMode: "",
+  teamFeedback: [],
 };
 
 const categoryEnglish = { all: "All", coffee: "Coffee", noncoffee: "Non-Coffee", tea: "Tea", dessert: "Dessert" };
@@ -161,14 +162,28 @@ function feedbackRecords() {
   }
 }
 
+async function loadTeamFeedback() {
+  try {
+    const response = await fetch("./team-feedback.json");
+    if (!response.ok) throw new Error("team feedback unavailable");
+    const records = await response.json();
+    state.teamFeedback = Array.isArray(records) ? records.map((record) => ({ ...record, seeded: true })) : [];
+  } catch (error) {
+    console.error(error);
+    state.teamFeedback = [];
+  }
+  renderFeedbackHistory();
+}
+
 function renderFeedbackHistory() {
-  const records = feedbackRecords().map((record) => ({ ...record, note: String(record.note || record.comment || "") })).filter((record) => record.note);
+  const personal = feedbackRecords().map((record) => ({ ...record, note: String(record.note || record.comment || "") })).filter((record) => record.note).reverse();
+  const records = [...personal, ...state.teamFeedback];
   $("#feedbackCount").textContent = tr(`${records.length}건`, `${records.length} saved`);
-  $("#feedbackHistory").innerHTML = records.length ? [...records].reverse().map((record) => `
-    <article class="feedback-history-item">
-      <div><time datetime="${escapeHtml(record.created_at || "")}">${escapeHtml(new Date(record.created_at).toLocaleString(state.language === "en" ? "en-US" : "ko-KR"))}</time><span>${record.order_type === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout")}</span></div>
+  $("#feedbackHistory").innerHTML = records.length ? records.map((record) => `
+    <article class="feedback-history-item ${record.seeded ? "team-feedback" : ""}">
+      <div><strong>${escapeHtml(record.author || tr("직접 입력", "Personal"))}</strong>${record.created_at ? `<time datetime="${escapeHtml(record.created_at)}">${escapeHtml(new Date(record.created_at).toLocaleString(state.language === "en" ? "en-US" : "ko-KR"))}</time>` : ""}${record.order_type ? `<span>${record.order_type === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout")}</span>` : ""}</div>
       <p>${escapeHtml(record.note)}</p>
-      <button type="button" data-feedback-id="${escapeHtml(record.id)}">${tr("삭제", "Delete")}</button>
+      ${record.seeded ? "" : `<button type="button" data-feedback-id="${escapeHtml(record.id)}">${tr("삭제", "Delete")}</button>`}
     </article>`).join("") : `<p class="feedback-empty">${tr("아직 저장된 의견이 없습니다.", "No feedback has been saved yet.")}</p>`;
 }
 
@@ -935,3 +950,4 @@ loadMenu().then(registerWebMcpTools).catch((error) => {
   setConnection("메뉴 오류", "offline");
   $("#menuGrid").innerHTML = `<div class="menu-empty">메뉴를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</div>`;
 });
+loadTeamFeedback();

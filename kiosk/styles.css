@@ -220,9 +220,11 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
 .feedback-history { display: grid; gap: 10px; }
 .feedback-history-item { position: relative; padding: 16px 74px 16px 16px; border: 1px solid var(--line); border-radius: 14px; background: white; }
 .feedback-history-item > div { display: flex; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 12px; }
+.feedback-history-item > div strong { color: var(--terracotta); font-size: 14px; }
 .feedback-history-item p { margin: 0; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .feedback-history-item button { position: absolute; top: 12px; right: 12px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); cursor: pointer; }
 .feedback-empty { margin: 0; padding: 22px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); text-align: center; }
+.feedback-history-item.team-feedback { padding-right: 16px; background: #fffcf5; }
 
 .category-tabs {
   display: flex;

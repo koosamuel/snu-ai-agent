@@ -10,7 +10,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-for file in index.html styles.css app.js rag-assistant.js config.js menu.json manifest.webmanifest sw.js .nojekyll; do
+for file in index.html styles.css app.js rag-assistant.js config.js menu.json team-feedback.json manifest.webmanifest sw.js .nojekyll; do
   cp "$PROJECT_DIR/$file" "$STAGING_DIR/$file"
 done
 
