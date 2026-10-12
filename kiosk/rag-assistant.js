@@ -179,19 +179,20 @@
 
   function requestedOptionIds(message, options = []) {
     const text = normalize(message);
-    const tests = [
-      ["temp-ice", /아아|아이스|ice|차갑/u],
-      ["temp-hot", /핫|따뜻|뜨겁/u],
-      ["size-large", /(?:^|\s)l(?:\s|$)|라지|large/u],
-      ["size-regular", /(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular/u],
-      ["extra-shot", /샷\s*추가|샷/u],
-      ["extra-decaf", /디카페인/u],
-      ["extra-oat", /오트\s*밀크|오트밀크/u],
-      ["warm-dessert", /데워|따뜻하게/u],
-      ["plain-dessert", /그대로/u],
+    const requests = [
+      [/아아|아이스|ice|차갑/u, (option) => normalize(option.name) === "ice"],
+      [/핫|따뜻|뜨겁/u, (option) => normalize(option.name) === "hot"],
+      [/(?:^|\s)l(?:\s|$)|라지|large/u, (option) => normalize(option.name) === "large"],
+      [/(?:^|\s)(?:m|r)(?:\s|$)|미디엄|레귤러|regular/u, (option) => normalize(option.name) === "regular"],
+      [/샷\s*추가|샷/u, (option) => normalize(option.name).includes("샷 추가")],
+      [/디카페인/u, (option) => normalize(option.name).includes("디카페인")],
+      [/오트\s*밀크|오트밀크/u, (option) => normalize(option.name).includes("오트 밀크")],
+      [/데워|따뜻하게/u, (option) => normalize(option.name).includes("따뜻하게")],
+      [/그대로/u, (option) => normalize(option.name) === "그대로"],
     ];
-    const available = new Set(options.map((option) => option.id));
-    return tests.filter(([id, pattern]) => available.has(id) && pattern.test(text)).map(([id]) => id);
+    return [...new Set(requests.flatMap(([pattern, matches]) => pattern.test(text)
+      ? options.filter(matches).map((option) => option.id)
+      : []))];
   }
 
   function cartSummary(cart) {
