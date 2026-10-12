@@ -12,7 +12,7 @@
   <title>모닝브루 카페 키오스크</title>
   <link rel="icon" href="./assets/featured-cafe.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=4" />
+  <link rel="stylesheet" href="./styles.css?v=5" />
 </head>
 <body>
   <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
@@ -33,13 +33,8 @@
   </header>
 
   <main class="kiosk-shell">
-    <section class="menu-panel" aria-labelledby="menuTitle">
-      <div class="welcome-row">
-        <div>
-          <p class="eyebrow">오늘도 반갑습니다</p>
-          <h1 id="menuTitle">어떤 메뉴로 시작할까요?</h1>
-          <p>메뉴를 누르면 온도·크기·추가 옵션을 고를 수 있어요.</p>
-        </div>
+    <section class="menu-panel" aria-label="카페 메뉴">
+      <div class="welcome-row order-only">
         <div class="order-type" role="group" aria-label="주문 유형">
           <button class="order-type-button active" type="button" data-order-type="takeout">포장</button>
           <button class="order-type-button" type="button" data-order-type="dine_in">매장</button>
@@ -197,9 +192,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="./config.js?v=4" defer></script>
+  <script src="./config.js?v=5" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./rag-assistant.js?v=4" defer></script>
-  <script src="./app.js?v=4" defer></script>
+  <script src="./rag-assistant.js?v=5" defer></script>
+  <script src="./app.js?v=5" defer></script>
 </body>
 </html>

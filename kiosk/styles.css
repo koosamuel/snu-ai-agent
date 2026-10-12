@@ -142,6 +142,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 
 .menu-panel { min-width: 0; }
 .welcome-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.welcome-row.order-only { justify-content: flex-end; margin-bottom: 16px; }
+.welcome-row.order-only .order-type { margin-left: auto; }
 .eyebrow { margin: 0 0 7px; color: var(--terracotta); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
 h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; letter-spacing: -.055em; }
@@ -438,6 +440,8 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .ghost-button { min-height: 40px; padding: 0 13px; }
   h1 { font-size: 34px; }
   .order-type { width: 100%; }
+  .welcome-row.order-only { align-items: flex-end; }
+  .welcome-row.order-only .order-type { width: min(100%, 350px); }
   .order-type-button { flex: 1; }
   .feature-card { min-height: auto; }
   .feature-card img { height: 180px; }
