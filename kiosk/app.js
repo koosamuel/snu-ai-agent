@@ -76,18 +76,11 @@ const staticTranslations = [
   [".cart-summary > div:nth-child(2) span", "할인", "Discount"], [".cart-total span", "결제 예정 금액", "Total"],
   [".cart-summary > div:nth-child(2) strong", "0원", "₩0"],
   [".payment-note", "※ 실제 카드 승인 기능은 결제 단말 연동 후 사용할 수 있습니다.", "※ Card authorization requires a connected payment terminal."],
-  ["#feedbackPanel h1", "이용 경험을 알려 주세요", "Tell Us About Your Experience"],
-  [".feedback-intro", "남겨 주신 의견은 더 편리한 주문 경험을 만드는 데 활용됩니다.", "Your feedback helps us create a better ordering experience."],
-  [".rating-fieldset legend", "이번 이용은 어떠셨나요?", "How was your experience?"],
-  [".rating-options label:nth-child(1) small", "매우 아쉬움", "Very Poor"], [".rating-options label:nth-child(2) small", "아쉬움", "Poor"],
-  [".rating-options label:nth-child(3) small", "보통", "Okay"], [".rating-options label:nth-child(4) small", "만족", "Good"],
-  [".rating-options label:nth-child(5) small", "매우 만족", "Excellent"],
-  [".feedback-tags legend", "좋았거나 개선이 필요한 부분을 선택해 주세요", "What worked well or needs improvement?"],
-  [".feedback-tags label:nth-child(1) span", "메뉴 찾기", "Finding Menu"], [".feedback-tags label:nth-child(2) span", "AI 도우미", "AI Assistant"],
-  [".feedback-tags label:nth-child(3) span", "옵션 선택", "Options"], [".feedback-tags label:nth-child(4) span", "장바구니", "Cart"],
-  [".feedback-tags label:nth-child(5) span", "화면 구성", "Layout"],
-  [".feedback-comment > span", "추가 의견 (선택)", "Additional comments (optional)"],
-  ["#feedbackSubmitButton", "피드백 보내기", "Send Feedback"],
+  ["#feedbackPanel h1", "추가 의견", "Additional Feedback"],
+  [".feedback-intro", "키오스크를 사용하며 느낀 점을 간단히 남겨 주세요.", "Leave a short note about your kiosk experience."],
+  [".feedback-comment > span", "의견", "Feedback"],
+  ["#feedbackSubmitButton", "의견 저장", "Save Feedback"],
+  ["#feedbackHistoryTitle", "저장된 의견", "Saved Feedback"],
   ["#optionForm .quantity-row > span", "수량", "Quantity"],
   ["#checkoutDialog h2", "주문 내용을 확인해 주세요", "Review Your Order"],
   [".payment-methods legend", "결제 방법", "Payment Method"],
@@ -110,11 +103,12 @@ function applyLanguage() {
   });
   $("#ragInput").placeholder = tr("예: 아메리카노 두 잔 담아 줘", "e.g. Add two Americanos");
   $("#searchInput").placeholder = tr("메뉴 검색", "Search menu");
-  $("#feedbackComment").placeholder = tr("불편했던 점이나 좋았던 점을 자유롭게 작성해 주세요.", "Tell us what you liked or what could be improved.");
+  $("#feedbackComment").placeholder = tr("예: 메뉴 검색이 편리했습니다.", "e.g. The menu search was convenient.");
   setConnection(state.connectionMessage, state.connectionMode);
   renderCategories();
   renderMenu();
   renderCart();
+  renderFeedbackHistory();
   if (state.activeItem && $("#optionDialog").open) openOptions(state.activeItem.id);
 }
 
@@ -158,46 +152,46 @@ function switchPageTab(tabName) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-async function submitFeedback(event) {
+function feedbackRecords() {
+  try {
+    const records = JSON.parse(localStorage.getItem("cafe-kiosk-feedback") || "[]");
+    return Array.isArray(records) ? records : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function renderFeedbackHistory() {
+  const records = feedbackRecords().map((record) => ({ ...record, note: String(record.note || record.comment || "") })).filter((record) => record.note);
+  $("#feedbackCount").textContent = tr(`${records.length}건`, `${records.length} saved`);
+  $("#feedbackHistory").innerHTML = records.length ? [...records].reverse().map((record) => `
+    <article class="feedback-history-item">
+      <div><time datetime="${escapeHtml(record.created_at || "")}">${escapeHtml(new Date(record.created_at).toLocaleString(state.language === "en" ? "en-US" : "ko-KR"))}</time><span>${record.order_type === "dine_in" ? tr("매장", "Dine In") : tr("포장", "Takeout")}</span></div>
+      <p>${escapeHtml(record.note)}</p>
+      <button type="button" data-feedback-id="${escapeHtml(record.id)}">${tr("삭제", "Delete")}</button>
+    </article>`).join("") : `<p class="feedback-empty">${tr("아직 저장된 의견이 없습니다.", "No feedback has been saved yet.")}</p>`;
+}
+
+function submitFeedback(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const data = new FormData(form);
-  const rating = Number(data.get("rating"));
+  const note = $("#feedbackComment").value.trim();
   const status = $("#feedbackStatus");
-  const button = $("#feedbackSubmitButton");
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    status.textContent = tr("만족도를 선택해 주세요.", "Please select a rating.");
+  if (!note) {
+    status.textContent = tr("의견을 입력해 주세요.", "Please enter your feedback.");
     return;
   }
-
-  button.disabled = true;
-  button.textContent = tr("보내는 중…", "Sending…");
-  status.textContent = "";
-  const feedback = {
-    rating,
-    tags: data.getAll("tags"),
-    comment: String(data.get("comment") || "").trim() || null,
+  const records = feedbackRecords();
+  records.push({
+    id: crypto.randomUUID?.() || `feedback-${Date.now()}`,
+    note,
     order_type: state.orderType,
-  };
-
-  try {
-    if (db) {
-      const { error } = await db.from("feedback").insert(feedback);
-      if (error) throw error;
-    } else {
-      const saved = JSON.parse(localStorage.getItem("cafe-kiosk-feedback") || "[]");
-      saved.push({ ...feedback, created_at: new Date().toISOString() });
-      localStorage.setItem("cafe-kiosk-feedback", JSON.stringify(saved.slice(-30)));
-    }
-    form.reset();
-    status.textContent = tr("소중한 의견을 보내 주셔서 감사합니다.", "Thank you for your feedback.");
-  } catch (error) {
-    console.error(error);
-    status.textContent = tr("피드백을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", "We could not save your feedback. Please try again.");
-  } finally {
-    button.disabled = false;
-    button.textContent = tr("피드백 보내기", "Send Feedback");
-  }
+    created_at: new Date().toISOString(),
+  });
+  localStorage.setItem("cafe-kiosk-feedback", JSON.stringify(records.slice(-30)));
+  form.reset();
+  status.textContent = tr("의견을 저장했습니다.", "Feedback saved.");
+  renderFeedbackHistory();
 }
 
 async function loadLocalMenu() {
@@ -881,6 +875,14 @@ $("#demoStaffButton").addEventListener("click", async () => { state.staffDemo = 
 $("#staffLogoutButton").addEventListener("click", staffLogout);
 $$(`[data-page-tab]`).forEach((button) => button.addEventListener("click", () => switchPageTab(button.dataset.pageTab)));
 $("#feedbackForm").addEventListener("submit", submitFeedback);
+$("#feedbackHistory").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-feedback-id]");
+  if (!button) return;
+  const records = feedbackRecords().filter((record) => record.id !== button.dataset.feedbackId);
+  localStorage.setItem("cafe-kiosk-feedback", JSON.stringify(records));
+  $("#feedbackStatus").textContent = tr("선택한 의견을 삭제했습니다.", "Feedback deleted.");
+  renderFeedbackHistory();
+});
 $("#ragResetButton").addEventListener("click", resetRagSession);
 $("#ragForm").addEventListener("submit", submitRagMessage);
 $("#ragInput").addEventListener("keydown", (event) => {
