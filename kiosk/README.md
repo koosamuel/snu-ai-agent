@@ -85,7 +85,7 @@ Publishable Key는 RLS를 전제로 브라우저에서 사용하는 공개 식�
 
 `main/kiosk`에 변경이 push되면 GitHub Actions가 테스트와 정적 빌드를 수행하고 GitHub Pages에 자동 배포합니다.
 
-- 공개 주소: https://koosamuel.github.io/snu-ai-agent/
+- 공개 주소: https://koosamuel.github.io/snu-ai-agent/kiosk/
 - 배포 워크플로: `.github/workflows/deploy-kiosk-pages.yml`
 
 ## 정적 배포 결과 생성

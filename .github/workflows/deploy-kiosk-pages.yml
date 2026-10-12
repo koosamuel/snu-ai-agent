@@ -41,13 +41,19 @@ jobs:
       - name: Build static site
         run: sh kiosk/scripts/build-static.sh
 
+      - name: Prepare root and kiosk URLs
+        run: |
+          mkdir -p pages/kiosk
+          cp -R kiosk/dist/. pages/
+          cp -R kiosk/dist/. pages/kiosk/
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: kiosk/dist
+          path: pages
 
       - name: Deploy GitHub Pages
         id: deployment

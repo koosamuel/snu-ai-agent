@@ -28,7 +28,7 @@ python app.py
 
 GitHub Actions가 `main/kiosk`의 테스트와 정적 빌드를 수행한 뒤 GitHub Pages에 배포합니다.
 
-- 공개 주소: https://koosamuel.github.io/snu-ai-agent/
-- GitHub Pages 배포 원본: `main` 브랜치의 `/kiosk`
+- 공개 주소: https://koosamuel.github.io/snu-ai-agent/kiosk/
+- GitHub Pages 배포 원본: `main` 브랜치의 `/kiosk` (`/snu-ai-agent/kiosk/` 경로로 게시)
 - 배포 워크플로: `.github/workflows/deploy-kiosk-pages.yml`
 - 비밀 키와 `service_role` 키는 저장소에 올리지 않습니다.
