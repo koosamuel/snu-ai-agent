@@ -169,6 +169,7 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   cursor: pointer;
 }
 .order-type-button.active { color: white; background: var(--sage); box-shadow: 0 5px 15px rgba(47,74,59,.2); }
+.header-order-type .order-type-button { min-width: 76px; min-height: 42px; }
 
 .category-tabs {
   display: flex;
@@ -413,11 +414,10 @@ h1 { margin-bottom: 8px; font-size: clamp(31px, 4vw, 50px); line-height: 1.12; l
   .brand-mark { width: 40px; height: 40px; }
   .brand strong { font-size: 18px; }
   #languageButton { display: none; }
-  .assistant-button { padding: 0 12px; }
-  .assistant-label { display: none; }
+  .header-order-type .order-type-button { min-width: 58px; padding: 0 12px; }
   .ghost-button { min-height: 40px; padding: 0 13px; }
   h1 { font-size: 34px; }
-  .order-type { width: 100%; }
+  .order-type:not(.header-order-type) { width: 100%; }
   .welcome-row.order-only { align-items: flex-end; }
   .welcome-row.order-only .order-type { width: min(100%, 350px); }
   .order-type-button { flex: 1; }

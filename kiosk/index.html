@@ -12,7 +12,7 @@
   <title>카페 키오스크 - 1조</title>
   <link rel="icon" href="./assets/featured-cafe.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=11" />
+  <link rel="stylesheet" href="./styles.css?v=12" />
 </head>
 <body>
   <a class="skip-link" href="#menuGrid">메뉴로 바로가기</a>
@@ -24,9 +24,10 @@
     </div>
     <div class="top-actions">
       <span id="connectionStatus" class="connection-status" role="status">메뉴 준비 중</span>
-      <button id="ragButton" class="assistant-button" type="button" aria-label="AI 주문 도우미로 이동" aria-controls="ragDialog">
-        <span class="assistant-icon" aria-hidden="true">✦</span><span class="assistant-label">AI 주문 도우미</span>
-      </button>
+      <div class="order-type header-order-type" role="group" aria-label="주문 유형">
+        <button class="order-type-button active" type="button" data-order-type="takeout">포장</button>
+        <button class="order-type-button" type="button" data-order-type="dine_in">매장</button>
+      </div>
       <button id="languageButton" class="ghost-button" type="button" aria-label="언어 변경">한 / EN</button>
       <button id="staffButton" class="ghost-button" type="button">운영자</button>
     </div>
@@ -34,13 +35,6 @@
 
   <main class="kiosk-shell">
     <section class="menu-panel" aria-label="카페 메뉴">
-      <div class="welcome-row order-only">
-        <div class="order-type" role="group" aria-label="주문 유형">
-          <button class="order-type-button active" type="button" data-order-type="takeout">포장</button>
-          <button class="order-type-button" type="button" data-order-type="dine_in">매장</button>
-        </div>
-      </div>
-
       <section id="ragDialog" class="rag-modal rag-inline" aria-labelledby="ragTitle">
         <div class="rag-shell">
           <header class="rag-heading">
@@ -180,9 +174,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="./config.js?v=11" defer></script>
+  <script src="./config.js?v=12" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./rag-assistant.js?v=11" defer></script>
-  <script src="./app.js?v=11" defer></script>
+  <script src="./rag-assistant.js?v=12" defer></script>
+  <script src="./app.js?v=12" defer></script>
 </body>
 </html>

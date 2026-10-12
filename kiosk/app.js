@@ -700,7 +700,6 @@ $("#staffButton").addEventListener("click", openStaff);
 $("#staffLoginForm").addEventListener("submit", staffLogin);
 $("#demoStaffButton").addEventListener("click", async () => { state.staffDemo = true; await showStaffBoard(); });
 $("#staffLogoutButton").addEventListener("click", staffLogout);
-$("#ragButton").addEventListener("click", openRagAssistant);
 $("#ragResetButton").addEventListener("click", resetRagSession);
 $("#ragForm").addEventListener("submit", submitRagMessage);
 $("#ragInput").addEventListener("keydown", (event) => {
@@ -736,7 +735,7 @@ if (db) {
   }).subscribe();
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=11").catch(console.error));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=12").catch(console.error));
 
 renderCart();
 $("#demoStaffButton").hidden = USE_REMOTE;
